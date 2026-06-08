@@ -1,0 +1,29 @@
+cat > .gitignore << 'EOF'
+# Large reference files
+reference/*.fa
+reference/*.fa.fai
+reference/*.bt2
+reference/*.chrom.sizes
+
+# Raw ATAC-seq data
+peaks/*.gz
+peaks/*.narrowPeak
+peaks/*.bed
+peaks/sample_beds/
+
+# Large annotation files
+annotation/*.gtf
+annotation/rmsk.txt
+annotation/*.bed
+
+# Keep only results
+!results/*.bed
+!results/*.txt
+
+# System files
+.DS_Store
+*.log
+*.tmp
+EOFreference/
+peaks/
+annotation/
