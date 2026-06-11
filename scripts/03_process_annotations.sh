@@ -56,8 +56,9 @@ bedtools slop \
 echo "Processing repeats..."
 
 # Convert RepeatMasker format to BED
+# Emit repClass ($12) as column 5 in place of swScore ($2)
 awk 'BEGIN{OFS="\t"} {
-    print $6, $7, $8, $11, $2, $10
+    print $6, $7, $8, $11, $12, $10
 }' rmsk.txt \
 | sort -k1,1 -k2,2n \
 > repeats_all.bed
@@ -65,8 +66,8 @@ awk 'BEGIN{OFS="\t"} {
 echo "Found $(wc -l < repeats_all.bed) repeat elements"
 
 # Extract transposable elements (most problematic)
-grep -E "DNA|LINE|SINE|LTR" repeats_all.bed \
-| cut -f1-3 \
+# Use repClass-based selector to match DNA|LINE|SINE|LTR|Retroposon|RC
+awk 'BEGIN{OFS="\t"} $5 ~ /^(DNA|LINE|SINE|LTR|Retroposon|RC)\??$/ {print $1,$2,$3}' repeats_all.bed \
 | sort -k1,1 -k2,2n \
 | bedtools merge \
 > repeats_transposons.bed
