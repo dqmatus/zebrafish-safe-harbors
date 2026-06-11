@@ -10,10 +10,21 @@
 # Default: 150bp on each side = 300bp total window
 SUMMIT_WINDOW_HALF=150
 
-# Consensus tiers (percentage of biosamples/stages required)
+# Consensus tiers (percentage of stages/biosamples required for consistency)
+# These now represent: "open in X% of developmental stages or biosamples"
+# After collapsing replicates to biosample level, then to stage level
 CONSENSUS_MIN_PCT_80=80
 CONSENSUS_MIN_PCT_90=90
 CONSENSUS_MIN_PCT_100=100
+
+# ============================================================================
+# Score Normalization & Aggregation
+# ============================================================================
+# Method for score aggregation across samples:
+# - "quantile": quantile-normalize scores across samples, then median
+# - "rank": rank scores, then median
+# - "max": use maximum score (conservative, less recommended)
+SCORE_NORMALIZATION_METHOD="quantile"
 
 # ============================================================================
 # Exclusion & Filtering Parameters
@@ -45,6 +56,12 @@ GENOME_BUILD="GRCz11"
 # UCSC RepeatMasker release (rmsk.txt source)
 RMSK_SOURCE="https://hgdownload.soe.ucsc.edu/goldenPath/danRer11/database/rmsk.txt.gz"
 
+# DANIO-CODE accession metadata (SQ → biosample → stage mapping)
+# Format: one line per sample: "SQ_ID\tBiosample_ID\tStage\tLab"
+# Example: DCD003127SQ	DCD007335BS	0hpf	Zhang_Lab
+# If not present, pipeline assumes each file is a unique biosample/stage
+DANIO_CODE_METADATA="annotation/danio_code_accession_map.txt"
+
 # ============================================================================
 # Quality Control & Logging
 # ============================================================================
@@ -59,5 +76,7 @@ LOGFILE="${PWD}/pipeline.log"
 # ============================================================================
 export SUMMIT_WINDOW_HALF
 export CONSENSUS_MIN_PCT_80 CONSENSUS_MIN_PCT_90 CONSENSUS_MIN_PCT_100
+export SCORE_NORMALIZATION_METHOD
 export GENE_BUFFER_KB ESSENTIAL_GENE_BUFFER_KB TELOMERE_END_DISTANCE
 export MIN_HARBOR_SIZE ENSEMBL_RELEASE GENOME_BUILD VERBOSE LOGFILE
+export DANIO_CODE_METADATA
