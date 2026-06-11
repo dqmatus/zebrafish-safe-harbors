@@ -2,14 +2,14 @@
 # 09_annotate_candidates.sh
 # Annotates safe harbor candidates with distance to nearest genes
 
-set -e
+set -euo pipefail
 
 echo "=== Annotating Safe Harbor Candidates ==="
 
 cd annotation
 
 # Add chr prefix to genes for compatibility with ATAC-seq peak files
-awk '{print "chr"$0}' genes.bed | sort -k1,1 -k2,2n > genes_chr_sorted.bed
+awk 'BEGIN{OFS="\t"} {print "chr"$1, $2, $3, $4, $5, $6}' genes.bed | sort -k1,1 -k2,2n > genes_chr_sorted.bed
 
 cd ../results
 
