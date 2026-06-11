@@ -2,7 +2,14 @@
 # 08_find_safe_harbors.sh
 # Filters consensus peaks against exclusion regions to find safe harbors
 
-set -e
+set -euo pipefail
+
+# Load configuration
+if [ ! -f "../config.sh" ]; then
+    echo "ERROR: config.sh not found in parent directory"
+    exit 1
+fi
+source ../config.sh
 
 echo "=== Finding Safe Harbor Candidates ==="
 
@@ -57,15 +64,15 @@ echo "  100% consensus: $(wc -l < safe_harbors_100pct_minimal.bed)"
 echo "  90% consensus: $(wc -l < safe_harbors_90pct_minimal.bed)"
 echo "  80% consensus: $(wc -l < safe_harbors_80pct_minimal.bed)"
 
-# Filter by minimum size (need room for landing pad, at least 300bp)
+# Filter by minimum size (need room for landing pad)
 echo ""
-echo "=== Filtering by size (>=300bp) ==="
+echo "=== Filtering by size (>=${MIN_HARBOR_SIZE}bp) ==="
 
-awk '($3 - $2) >= 300' safe_harbors_100pct_minimal.bed > safe_harbors_100pct_sized.bed
-awk '($3 - $2) >= 300' safe_harbors_90pct_minimal.bed > safe_harbors_90pct_sized.bed
-awk '($3 - $2) >= 300' safe_harbors_80pct_minimal.bed > safe_harbors_80pct_sized.bed
+awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' safe_harbors_100pct_minimal.bed > safe_harbors_100pct_sized.bed
+awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' safe_harbors_90pct_minimal.bed > safe_harbors_90pct_sized.bed
+awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' safe_harbors_80pct_minimal.bed > safe_harbors_80pct_sized.bed
 
-echo "After size filtering (>=300bp):"
+echo "After size filtering (>=${MIN_HARBOR_SIZE}bp):"
 echo "  100% consensus: $(wc -l < safe_harbors_100pct_sized.bed)"
 echo "  90% consensus: $(wc -l < safe_harbors_90pct_sized.bed)"
 echo "  80% consensus: $(wc -l < safe_harbors_80pct_sized.bed)"
