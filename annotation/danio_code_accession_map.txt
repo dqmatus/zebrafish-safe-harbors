@@ -1,0 +1,33 @@
+# DANIO-CODE Accession Map
+# Format: SQ_ID	Biosample_ID	Stage	Lab	Notes
+# 
+# This file maps individual SQ (sequencing) accessions to their biosample (BS) IDs,
+# developmental stages, and labs. Used for collapsing technical/biological replicates
+# and stratifying consensus by developmental stage.
+#
+# Generate with: extract from DANIO-CODE project metadata or fill manually from
+# literature/lab records. See DATA_NEEDED.md for sources.
+
+# Zhang Lab - Early stages (wild-type)
+DCD003127SQ	DCD007335BS	0hpf	Zhang_Lab	Unfertilized egg
+DCD003152SQ	DCD007338BS	6hpf	Zhang_Lab	Early blastula
+DCD003157SQ	DCD007338BS	6hpf	Zhang_Lab	Early blastula (replicate)
+DCD003146SQ	DCD007337BS	3hpf	Zhang_Lab	Mid blastula
+DCD003131SQ	DCD007336BS	2hpf	Zhang_Lab	High
+DCD003141SQ	DCD007336BS	2hpf	Zhang_Lab	High (replicate)
+DCD003126SQ	DCD007334BS	1hpf	Zhang_Lab	2-cell
+DCD003151SQ	DCD007334BS	1hpf	Zhang_Lab	2-cell (replicate)
+
+# Skarmeta Lab - Multiple stages (wild-type)
+DCD003082SQ	DCD007265BS	1.5hpf	Skarmeta_Lab	Early cleavage
+DCD003084SQ	DCD007265BS	1.5hpf	Skarmeta_Lab	Early cleavage (replicate)
+DCD003087SQ	DCD007266BS	4hpf	Skarmeta_Lab	Blastula
+DCD003090SQ	DCD007266BS	4hpf	Skarmeta_Lab	Blastula (replicate)
+DCD003086SQ	DCD007267BS	5hpf	Skarmeta_Lab	Blastula-Gastrula
+DCD003089SQ	DCD007267BS	5hpf	Skarmeta_Lab	Blastula-Gastrula (replicate)
+DCD003092SQ	DCD007268BS	6hpf	Skarmeta_Lab	Gastrula
+DCD003096SQ	DCD007268BS	6hpf	Skarmeta_Lab	Gastrula (replicate)
+DCD003079SQ	DCD007269BS	8hpf	Skarmeta_Lab	Post-gastrula
+DCD003088SQ	DCD007269BS	8hpf	Skarmeta_Lab	Post-gastrula (replicate)
+DCD000394SQ	DCD000152BS	12hpf	Skarmeta_Lab	Somitogenesis
+DCD000395SQ	DCD000152BS	12hpf	Skarmeta_Lab	Somitogenesis (replicate)
