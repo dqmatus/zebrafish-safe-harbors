@@ -5,11 +5,11 @@
 set -euo pipefail
 
 # Load configuration
-if [ ! -f "../config.sh" ]; then
+if [ ! -f "./config.sh" ]; then
     echo "ERROR: config.sh not found in parent directory"
     exit 1
 fi
-source ../config.sh
+source ./config.sh
 
 echo "=== Finding Safe Harbor Candidates ==="
 

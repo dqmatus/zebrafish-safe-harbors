@@ -31,7 +31,7 @@ echo "  Score normalization: ${SCORE_NORMALIZATION_METHOD}"
 echo "  Consensus tiers: ${CONSENSUS_MIN_PCT_80}%, ${CONSENSUS_MIN_PCT_90}%, ${CONSENSUS_MIN_PCT_100}%"
 echo ""
 
-cd peaks
+cd ../peaks
 
 # Check for normalized scores
 if [ ! -d "normalized_scores" ]; then
@@ -70,7 +70,7 @@ mkdir -p biosamples_collapsed
 
 # For each biosample, merge all replicates and take median score
 awk '
-NR > 1 {
+!/^#/ && NF > 0 {
     sq_id = $1
     bs_id = $2
     stage = $3
@@ -86,51 +86,36 @@ echo "Found $(wc -l < biosamples_list.txt) unique biosamples"
 
 while read biosample stage; do
     # Find all SQ files for this biosample
-    sqs=$(awk -v bs="$biosample" '$2 == bs {print $1}' "$METADATA_FILE" | tr '\n' '|' | sed 's/|$//')
-    
+    sqs=$(awk -v bs="$biosample" '!/^#/ && $2 == bs {print $1}' "$METADATA_FILE" | tr '\n' ' ')
+
     if [ -z "$sqs" ]; then
         continue
     fi
-    
-    # Combine all peaks for this biosample, then take median score per region
-    cat normalized_scores/*.normalized.bed | \
-    awk -v sqs="$sqs" -v bs="$biosample" 'BEGIN {
-        split(sqs, sq_array, "|")
-        for (i in sq_array) sq_pat[sq_array[i]] = 1
-    }
-    {
-        # Extract SQ ID from name field (col 4): format is name_SQ_ID
-        sq = $4
-        gsub(/.*\./, "", sq)  # Extract the SQ ID part
-        
-        # Check if this peak belongs to current biosample replicates
-        if (sq in sq_pat) {
-            key = $1 ":" $2 ":" $3  # chrom:start:end
-            scores[key] = scores[key] " " $5
-        }
-    }
-    END {
-        for (key in scores) {
-            split(key, parts, ":")
-            chrom = parts[1]
-            start = parts[2]
-            end = parts[3]
-            
-            # Calculate median score
-            n = split(scores[key], score_arr)
-            for (i = 1; i <= n; i++) asort_scores[i] = score_arr[i]
-            if (n % 2 == 0) {
-                median = (asort_scores[n/2] + asort_scores[n/2 + 1]) / 2
-            } else {
-                median = asort_scores[(n + 1) / 2]
-            }
-            
-            print chrom, start, end, bs"_"start, median, "."
-        }
-    }
-    ' OFS='\t' > "biosamples_collapsed/${biosample}.bed"
-    
-    echo "  Collapsed $biosample (stage: $stage, replicates: $(echo $sqs | tr '|' ' ' | wc -w))"
+
+    # Cat only the normalized files belonging to this biosample's SQ accessions
+    > "biosamples_collapsed/${biosample}.tmp"
+    for sq in $sqs; do
+        matching_file=$(ls normalized_scores/*${sq}*.normalized.bed 2>/dev/null || true)
+        if [ -n "$matching_file" ]; then
+            cat "$matching_file" >> "biosamples_collapsed/${biosample}.tmp"
+        fi
+    done
+
+    if [ ! -s "biosamples_collapsed/${biosample}.tmp" ]; then
+        rm -f "biosamples_collapsed/${biosample}.tmp"
+        continue
+    fi
+
+    # Merge overlapping peaks and take median score per region
+    sort -k1,1 -k2,2n "biosamples_collapsed/${biosample}.tmp" \
+    | bedtools merge -i - -c 5 -o median \
+    | awk 'BEGIN{OFS="\t"} {print $1, $2, $3, ".", $4, "."}' \
+    > "biosamples_collapsed/${biosample}.bed"
+
+    rm -f "biosamples_collapsed/${biosample}.tmp"
+
+    num_sqs=$(echo $sqs | wc -w | tr -d ' ')
+    echo "  Collapsed $biosample (stage: $stage, replicates: $num_sqs)"
 done < biosamples_list.txt
 
 echo "Biosample collapsing complete: $(ls biosamples_collapsed/ | wc -l) biosamples"
@@ -145,7 +130,7 @@ mkdir -p stages_collapsed
 
 # Group biosamples by stage
 awk '
-NR > 1 {
+!/^#/ && NF > 0 {
     stages[$3] = stages[$3] " " $2
 }
 END {
@@ -159,40 +144,29 @@ echo "Found $num_stages unique developmental stages"
 while read stage biosamples; do
     # Remove leading space
     biosamples=$(echo "$biosamples" | sed 's/^ //')
-    
+
     # Merge all peaks from biosamples at this stage
+    > "stages_collapsed/${stage}.tmp"
     for bs in $biosamples; do
-        if [ -f "biosamples_collapsed/${bs}.bed" ]; then
+        if [ -f "biosamples_collapsed/${bs}.bed" ] && [ -s "biosamples_collapsed/${bs}.bed" ]; then
             cat "biosamples_collapsed/${bs}.bed"
         fi
-    done | \
-    awk -v stage="$stage" 'BEGIN {OFS="\t"} {
-        key = $1 ":" $2 ":" $3
-        scores[key] = scores[key] " " $5
-        chrom_map[key] = $1
-        start_map[key] = $2
-        end_map[key] = $3
-    }
-    END {
-        for (key in scores) {
-            chrom = chrom_map[key]
-            start = start_map[key]
-            end = end_map[key]
-            
-            # Calculate median score across biosamples at this stage
-            n = split(scores[key], score_arr)
-            asort(score_arr, asort_scores)
-            if (n % 2 == 0) {
-                median = (asort_scores[n/2] + asort_scores[n/2 + 1]) / 2
-            } else {
-                median = asort_scores[(n + 1) / 2]
-            }
-            
-            print chrom, start, end, stage"_"start, median, "."
-        }
-    }' > "stages_collapsed/${stage}.bed"
-    
-    echo "  Collapsed stage $stage (biosamples: $(echo $biosamples | wc -w))"
+    done > "stages_collapsed/${stage}.tmp"
+
+    if [ ! -s "stages_collapsed/${stage}.tmp" ]; then
+        rm -f "stages_collapsed/${stage}.tmp"
+        continue
+    fi
+
+    # Merge overlapping regions and take median score
+    sort -k1,1 -k2,2n "stages_collapsed/${stage}.tmp" \
+    | bedtools merge -i - -c 5 -o median \
+    | awk 'BEGIN{OFS="\t"} {print $1, $2, $3, ".", $4, "."}' \
+    > "stages_collapsed/${stage}.bed"
+
+    rm -f "stages_collapsed/${stage}.tmp"
+
+    echo "  Collapsed stage $stage (biosamples: $(echo $biosamples | wc -w | tr -d ' '))"
 done < stages_list.txt
 
 echo "Stage collapsing complete: $num_stages stages"

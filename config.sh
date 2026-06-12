@@ -3,9 +3,9 @@
 # Central configuration for the zebrafish safe-harbors pipeline
 # All magic numbers and thresholds are defined here for reproducibility
 
-# ============================================================================
+# ======================================================================
 # Consensus Peak Summit Parameters
-# ============================================================================
+# ======================================================================
 # Summit window size (bp on each side of the narrowPeak col-10 summit)
 # Default: 150bp on each side = 300bp total window
 SUMMIT_WINDOW_HALF=150
@@ -17,18 +17,18 @@ CONSENSUS_MIN_PCT_80=80
 CONSENSUS_MIN_PCT_90=90
 CONSENSUS_MIN_PCT_100=100
 
-# ============================================================================
+# ======================================================================
 # Score Normalization & Aggregation
-# ============================================================================
+# ======================================================================
 # Method for score aggregation across samples:
 # - "quantile": quantile-normalize scores across samples, then median
 # - "rank": rank scores, then median
 # - "max": use maximum score (conservative, less recommended)
 SCORE_NORMALIZATION_METHOD="quantile"
 
-# ============================================================================
+# ======================================================================
 # Exclusion & Filtering Parameters
-# ============================================================================
+# ======================================================================
 # Gene buffer distance (bp on each side of gene body)
 GENE_BUFFER_KB=10
 
@@ -38,15 +38,87 @@ ESSENTIAL_GENE_BUFFER_KB=20
 # Telomere distance from chromosome end (bp)
 TELOMERE_END_DISTANCE=500000
 
-# Centromere model (currently disabled - zebrafish midpoint is inaccurate)
+# Centromere model (currently disabled — zebrafish midpoint is inaccurate)
 CENTROMERE_USE=false
 
-# Minimum safe harbor size (bp - must fit landing pad construct)
+# Minimum safe harbor size (bp — must fit landing pad construct)
 MIN_HARBOR_SIZE=300
 
-# ============================================================================
+# ======================================================================
+# Phase 3: GSH-style Distance Criteria (Papapetrou/Sadelain)
+# ======================================================================
+# Extended gene buffer for GSH criteria (bp)
+GSH_GENE_BUFFER_KB=50
+
+# Distance from cancer-associated genes (bp)
+GSH_CANCER_GENE_BUFFER_KB=300
+
+# Distance from dosage-sensitive genes (bp)
+GSH_DOSAGE_SENSITIVE_BUFFER_KB=100
+
+# Distance from miRNAs/ncRNAs (bp)
+GSH_MIRNA_BUFFER_KB=50
+
+# Distance from ultraconserved elements (bp)
+GSH_UCE_BUFFER_KB=50
+
+# ======================================================================
+# Phase 3: Regulatory Element Exclusion Tracks
+# ======================================================================
+# ChIP-seq peak files (BED format, chr-prefixed)
+# Set to empty string or nonexistent path if not available
+CHIP_H3K27AC_BED="annotation/chip/H3K27ac_peaks.bed"
+CHIP_H3K4ME1_BED="annotation/chip/H3K4me1_peaks.bed"
+CHIP_H3K4ME3_BED="annotation/chip/H3K4me3_peaks.bed"
+CHIP_CTCF_BED="annotation/chip/CTCF_peaks.bed"
+
+# Conservation tracks
+CONSERVATION_BED="annotation/conservation/phastCons_conserved.bed"
+CNE_BED="annotation/conservation/CNEs.bed"
+
+# Hi-C TAD boundaries (flagging only, not exclusion)
+TAD_BOUNDARIES_BED="annotation/hic/TAD_boundaries.bed"
+
+# DANIO-CODE COPE/DOPE tracks
+COPE_BED="annotation/cope_dope/COPE_regions.bed"
+DOPE_BED="annotation/cope_dope/DOPE_regions.bed"
+
+# ======================================================================
+# Phase 3: Mappability & Blacklist
+# ======================================================================
+MAPPABILITY_BED="annotation/mappability/GRCz11_mappability_low.bed"
+SEGDUP_BED="annotation/mappability/segmental_duplications.bed"
+BLACKLIST_BED="annotation/mappability/GRCz11_blacklist.bed"
+
+# Mappability threshold (regions below this are excluded)
+MAPPABILITY_THRESHOLD=0.8
+
+# ======================================================================
+# Phase 3: GSH Gene Lists
+# ======================================================================
+GENE_BED_COMPREHENSIVE="annotation/genes_comprehensive.bed"
+MIRNA_NCRNA_BED="annotation/mirna_ncrna_coordinates.bed"
+DOSAGE_SENSITIVE_GENES_BED="annotation/dosage_sensitive_genes.bed"
+CANCER_ASSOCIATED_GENES_BED="annotation/cancer_associated_genes.bed"
+UCE_BED="annotation/ultraconserved_elements.bed"
+
+# ======================================================================
+# Phase 4: sgRNA Targetability
+# ======================================================================
+SGRNA_BED="annotation/sgrna/candidate_guides.bed"
+SGRNA_MIN_SPECIFICITY=0.95
+SGRNA_TOOL="CRISPOR"
+
+# ======================================================================
+# Phase 5: Validation Benchmarks
+# ======================================================================
+PIGLET_14A_BED="annotation/benchmarks/pIGLET14a_coords.bed"
+PIGLET_24B_BED="annotation/benchmarks/pIGLET24b_coords.bed"
+SB_FOUNDER_SITES_BED="annotation/benchmarks/SB_founder_sites.bed"
+
+# ======================================================================
 # Annotation & Data Provenance
-# ============================================================================
+# ======================================================================
 # Ensembl release version
 ENSEMBL_RELEASE=110
 
@@ -58,25 +130,36 @@ RMSK_SOURCE="https://hgdownload.soe.ucsc.edu/goldenPath/danRer11/database/rmsk.t
 
 # DANIO-CODE accession metadata (SQ → biosample → stage mapping)
 # Format: one line per sample: "SQ_ID\tBiosample_ID\tStage\tLab"
-# Example: DCD003127SQ	DCD007335BS	0hpf	Zhang_Lab
+# Example: DCD0031275Q  DCD007335BS 0hpf    Zhang_Lab
 # If not present, pipeline assumes each file is a unique biosample/stage
 DANIO_CODE_METADATA="annotation/danio_code_accession_map.txt"
 
-# ============================================================================
+# ======================================================================
 # Quality Control & Logging
-# ============================================================================
+# ======================================================================
 # Enable verbose logging
 VERBOSE=true
 
 # Log file location (relative to script directory)
 LOGFILE="${PWD}/pipeline.log"
 
-# ============================================================================
+# ======================================================================
 # Export for use in other scripts
-# ============================================================================
+# ======================================================================
 export SUMMIT_WINDOW_HALF
 export CONSENSUS_MIN_PCT_80 CONSENSUS_MIN_PCT_90 CONSENSUS_MIN_PCT_100
 export SCORE_NORMALIZATION_METHOD
 export GENE_BUFFER_KB ESSENTIAL_GENE_BUFFER_KB TELOMERE_END_DISTANCE
-export MIN_HARBOR_SIZE ENSEMBL_RELEASE GENOME_BUILD VERBOSE LOGFILE
-export DANIO_CODE_METADATA
+export CENTROMERE_USE MIN_HARBOR_SIZE
+export GSH_GENE_BUFFER_KB GSH_CANCER_GENE_BUFFER_KB GSH_DOSAGE_SENSITIVE_BUFFER_KB
+export GSH_MIRNA_BUFFER_KB GSH_UCE_BUFFER_KB
+export CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED
+export CONSERVATION_BED CNE_BED TAD_BOUNDARIES_BED
+export COPE_BED DOPE_BED
+export MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED MAPPABILITY_THRESHOLD
+export GENE_BED_COMPREHENSIVE MIRNA_NCRNA_BED
+export DOSAGE_SENSITIVE_GENES_BED CANCER_ASSOCIATED_GENES_BED UCE_BED
+export SGRNA_BED SGRNA_MIN_SPECIFICITY SGRNA_TOOL
+export PIGLET_14A_BED PIGLET_24B_BED SB_FOUNDER_SITES_BED
+export ENSEMBL_RELEASE GENOME_BUILD RMSK_SOURCE DANIO_CODE_METADATA
+export VERBOSE LOGFILE

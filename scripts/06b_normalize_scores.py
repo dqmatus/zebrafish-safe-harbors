@@ -59,7 +59,7 @@ def normalize_sample_scores(narrowpeak_file, method="quantile"):
             sep='\t',
             header=None,
             usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-            dtype={0: str, 1: int, 2: int, 3: str, 4: float, 5: float, 
+            dtype={0: str, 1: int, 2: int, 3: str, 4: int, 5: str, 
                    6: float, 7: float, 8: float, 9: int}
         )
         df.columns = ['chrom', 'start', 'end', 'name', 'score', 'strand',
