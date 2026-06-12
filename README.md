@@ -5,6 +5,8 @@ in zebrafish (GRCz11) as candidate single-copy integration / landing-pad sites,
 using DANIO-CODE ATAC-seq data.
 
 ## Pipeline Overview
+
+```
 01_setup_reference.sh       → Download/index GRCz11 genome
 02_download_annotations.sh  → Download Ensembl + UCSC annotations
 03_process_annotations.sh   → Process into BED format (genes, exons, repeats, TEs)
@@ -17,6 +19,7 @@ using DANIO-CODE ATAC-seq data.
 08b_biological_filters.sh   → Phase 3: regulatory/conservation/mappability filters
 09_annotate_candidates.sh   → Rich feature table with composite ranking
 10_benchmark.sh             → Validation against pIGLET/SB known sites
+```
 
 ## Methodology
 
