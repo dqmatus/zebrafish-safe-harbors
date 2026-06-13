@@ -85,7 +85,7 @@ echo "--- Step 2: GC content ---"
 GENOME_FASTA="../reference/GRCz11.fa"
 if [ -f "$GENOME_FASTA" ]; then
     # Strip chr prefix for genome FASTA compatibility (FASTA uses bare chrom names)
-    awk 'BEGIN{OFS="\t"} {sub(/^chr/, "", $1); print}' candidates_sorted.bed \
+    awk 'BEGIN{OFS="\t"} {sub(/^chr/, "", $1); print $1, $2, $3}' candidates_sorted.bed \
     | bedtools nuc \
         -fi "$GENOME_FASTA" \
         -bed - \
@@ -236,9 +236,9 @@ paste \
     # Composite rank with distance penalty
     stage = ($5 == "NA" || $5 == ".") ? 0 : $5+0
     size = ($4 == "NA" || $4 == ".") ? 0 : $4+0
-    gene_dist = ($7 == "NA" || $7 == "." || $7 == "") ? 100000 : $7+0
-    cons = ($9 == "NA" || $9 == ".") ? 0 : $9+0
-    rep = ($8 == "NA" || $8 == ".") ? 0 : $8+0
+    gene_dist = ($7 == "NA" || $7 == "." || $7 == "" || $7+0 < 0) ? 100000 : $7+0
+    cons = ($10 == "NA" || $10 == ".") ? 0 : $10+0
+    rep = ($9 == "NA" || $9 == ".") ? 0 : $9+0
     sgrna = ($12 == "NA" || $12 == ".") ? 0 : $12+0
 
     # Distance bonus/penalty
@@ -248,7 +248,7 @@ paste \
     composite = (stage * 100) + (size / 100) + (sgrna * 50) - (cons * 200) - (rep * 100) + dist_bonus
     print $0, composite
 }' \
-| sort -k13 -nr \
+| sort -t$'\t' -k13,13 -nr \
 >> candidate_feature_table.tsv
 
 TOTAL_ANNOTATED=$(tail -n +2 candidate_feature_table.tsv | wc -l)
