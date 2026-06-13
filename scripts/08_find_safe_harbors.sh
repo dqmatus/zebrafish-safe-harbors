@@ -20,15 +20,15 @@ cd results
 # If consensus peaks and exclusions have zero chrom overlap, abort with clear error.
 # This prevents silent regression where bedtools subtract silently returns empty.
 PEAK_CHROMS=$(cut -f1 consensus_peaks_100pct.bed 2>/dev/null | sort -u | wc -l)
-EXCL_CHROMS=$(cut -f1 ../annotation/exclusions_minimal.bed 2>/dev/null | sort -u | wc -l)
+EXCL_CHROMS=$(cut -f1 ../annotation/master_exclusions.bed 2>/dev/null | sort -u | wc -l)
 COMMON_CHROMS=$(comm -12 \
   <(cut -f1 consensus_peaks_100pct.bed 2>/dev/null | sort -u) \
-  <(cut -f1 ../annotation/exclusions_minimal.bed 2>/dev/null | sort -u) | wc -l)
+  <(cut -f1 ../annotation/master_exclusions.bed 2>/dev/null | sort -u) | wc -l)
 
 if [ "$COMMON_CHROMS" -eq 0 ]; then
   echo "ERROR: Chromosome naming mismatch detected!"
   echo "  Consensus peaks chroms: $(cut -f1 consensus_peaks_100pct.bed | sort -u | head -3 | tr '\n' ' ')"
-  echo "  Exclusions chroms:       $(cut -f1 ../annotation/exclusions_minimal.bed | sort -u | head -3 | tr '\n' ' ')"
+  echo "  Exclusions chroms:       $(cut -f1 ../annotation/master_exclusions.bed | sort -u | head -3 | tr '\n' ' ')"
   echo "  (Expected: both 'chr1' or both '1')"
   exit 1
 fi
@@ -40,23 +40,23 @@ echo "Starting consensus peaks (80%): $(wc -l < consensus_peaks_80pct.bed)"
 
 # Filter against minimal exclusions
 echo ""
-echo "=== Filtering against minimal exclusions ==="
+echo "=== Filtering against gene-distal (master) exclusions ==="
 # FIX A2: Update log message to reflect gene-distal filtering
 echo "(exons + essential genes + transposons + gene bodies ±10kb + telomeres)"
 
 bedtools subtract \
     -a consensus_peaks_100pct.bed \
-    -b ../annotation/exclusions_minimal.bed \
+    -b ../annotation/master_exclusions.bed \
     > safe_harbors_100pct_minimal.bed
 
 bedtools subtract \
     -a consensus_peaks_90pct.bed \
-    -b ../annotation/exclusions_minimal.bed \
+    -b ../annotation/master_exclusions.bed \
     > safe_harbors_90pct_minimal.bed
 
 bedtools subtract \
     -a consensus_peaks_80pct.bed \
-    -b ../annotation/exclusions_minimal.bed \
+    -b ../annotation/master_exclusions.bed \
     > safe_harbors_80pct_minimal.bed
 
 echo "After minimal filtering:"
