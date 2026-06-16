@@ -11,12 +11,17 @@ using DANIO-CODE ATAC-seq data.
 02_download_annotations.sh  → Download Ensembl + UCSC annotations
 03_process_annotations.sh   → Process into BED format (genes, exons, repeats, TEs)
 04_create_exclusions.py     → Generate exclusion region lists
+04b_extract_supplement_annotations.py → Extract validated enhancers / promoters /
+                              novel lncRNA from Baranasic 2022 supplement (danRer11)
 05_combine_exclusions.sh    → Merge all exclusion BEDs (with chr normalization)
 06_download_atac.sh         → Download DANIO-CODE ATAC-seq narrowPeak files
-06b_normalize_scores.py     → Quantile-normalize scores across samples
+06b_normalize_scores.py     → Per-sample rank-normalize narrowPeak scores
+06c_merge_chip.sh           → Merge per-mark ChIP samples into union peak BEDs
+06d_download_chip.sh        → Download DANIO-CODE H3K4me1/H3K4me3/CTCF ChIP-seq
 07_find_consensus_peaks.sh  → Summit-based consensus with replicate/stage collapsing
 08_find_safe_harbors.sh     → Filter consensus peaks against exclusions
 08b_biological_filters.sh   → Phase 3: regulatory/conservation/mappability filters
+                              (discard-whole: any candidate touching a track is dropped)
 09_annotate_candidates.sh   → Rich feature table with composite ranking
 10_benchmark.sh             → Validation against pIGLET/SB known sites
 ```
@@ -60,53 +65,69 @@ When data is provided (see DATA_NEEDED.md), additional filters are applied:
 ### Current Run Statistics
 | Metric | Value |
 |--------|-------|
-| ATAC-seq samples | 25 (20 in accession map) |
-| Biosamples | 11 |
-| Developmental stages | 10 (0 – 48 hpf) |
+| ATAC-seq samples | 31 (25 in accession map) |
+| Developmental stages | 11 (0 – 48 hpf) |
 | Stage range | Unfertilized egg → Long-pec (2 dpf) |
-| Consensus peaks (100%) | ~31,000 |
-| Consensus peaks (90%) | ~60,000 |
-| Consensus peaks (80%) | ~94,000 |
-| Safe harbors after filtering (100%) | 4,503 |
+| Consensus peaks (100% / 11 stages) | 32,601 |
+| Consensus peaks (90%) | 99,715 |
+| Consensus peaks (80%) | 139,793 |
+| Gene-distal + size-filtered (100%) | 4,771 |
+| **Final safe harbors after Phase 3 (100%)** | **2,489** |
+
+Phase 3 regulatory screen (discard-whole) removes 4,771 → 2,489 at the 100% tier:
+ChIP marks −2,240 (H3K27ac/H3K4me1/H3K4me3/CTCF), validated enhancers −3,
+promoters −27, novel lncRNA −12. ~47% of gene-distal constitutive peaks carry an
+active/poised-enhancer or insulator mark.
 
 ### Developmental Stages
-| Stage | Time | Lab | Biosamples |
-|-------|------|-----|------------|
-| Unfertilized egg | 0 hpf | Zhang | 1 |
-| 2-cell | 1 hpf | Zhang | 1 (2 reps) |
-| High | 2 hpf | Zhang | 1 (2 reps) |
-| Mid blastula | 3 hpf | Zhang | 1 |
-| Dome | 4.33 hpf | Skarmeta | 1 (2 reps) |
-| Shield | 6 hpf | Skarmeta + Zhang | 2 (4 reps) |
-| 75%-epiboly | 8 hpf | Skarmeta | 1 (2 reps) |
-| 5-9 somites | 12 hpf | Skarmeta | 1 (2 reps) |
-| Prim-5 | 24 hpf | Skarmeta | 1 (2 reps) |
-| Long-pec | 48 hpf | Skarmeta | 1 (2 reps) |
+| Stage | Time | Lab |
+|-------|------|-----|
+| Unfertilized egg | 0 hpf | Zhang |
+| 2-cell | 1 hpf | Zhang |
+| High | 2 hpf | Zhang |
+| Mid-blastula / 1k-cell | 3 hpf | Zhang |
+| Oblong | 3.7 hpf | Zhang |
+| Dome | 4.33 – 4.5 hpf | Skarmeta + Zhang |
+| Shield | 6 hpf | Skarmeta + Zhang |
+| 75%-epiboly | 8 hpf | Skarmeta |
+| 5-9 somites | 12 hpf | Skarmeta |
+| Prim-5 | 24 hpf | Skarmeta |
+| Long-pec | 48 hpf | Skarmeta |
+
+Oblong (3.7 hpf) and a cross-lab Zhang Dome were added 2026-06-16 (peri-ZGA
+wild-type ATAC). Pre-ZGA stages (64-/256-cell) were deliberately excluded — a
+constitutive landing site need not be accessible before zygotic genome activation.
 
 Stage assignments verified against Marlétaz et al. 2018 supplemental table
 (DOI: 10.1038/s41586-018-0734-6) and DANIO-CODE data portal.
 
-### Top 5 Candidates (IGV-validated, main chromosomes, ≥800bp)
+### Top 5 Candidates (main chromosomes, post full Phase 3 screen)
 
 | # | Locus | Size | Nearest Gene | Distance | GC% |
 |---|-------|------|--------------|----------|-----|
-| 1 | chr16:683,375-684,868 | 1,493bp | irx2a | 120kb | 51.6% |
-| 2 | chr7:45,155,247-45,156,838 | 1,591bp | vstm2b | 79kb | 42.2% |
-| 3 | chr14:48,494,914-48,496,373 | 1,459bp | 5S_rRNA | 80kb | 46.2% |
-| 4 | chr15:47,252,117-47,253,549 | 1,432bp | ENSDARG00000103069 | 59kb | 43.6% |
-| 5 | chr10:35,762,801-35,764,213 | 1,412bp | ovca2 | 94kb | 40.2% |
+| 1 | chr12:24,289,888-24,291,839 | 1,951bp | nrxn1a | 50kb | 44.2% |
+| 2 | chr20:11,445,664-11,447,454 | 1,790bp | ENSDARG00000096520 | 182kb | 45.5% |
+| 3 | chr24:3,128,791-3,130,466 | 1,675bp | inhbaa | 66kb | 48.0% |
+| 4 | chr6:35,551,173-35,552,810 | 1,637bp | rgs8 | 62kb | 45.5% |
+| 5 | chr14:27,882,540-27,884,172 | 1,632bp | ENSDARG00000075666 | 114kb | 46.2% |
 
 All candidates are:
-- Open in 10/10 developmental stages (0 – 48 hpf, constitutive)
-- Located in gene deserts >200kb
-- >50kb from nearest Ensembl gene
-- Zero repeat overlap
-- GC content 40-52%
+- Open in 11/11 developmental stages (0 – 48 hpf, constitutive)
+- >50kb from nearest Ensembl gene; zero repeat overlap
+- Free of H3K27ac/H3K4me1/H3K4me3/CTCF ChIP signal, validated enhancers,
+  promoters, and novel lncRNA (discard-whole regulatory screen)
+
+**Note — prior top 5 changed after Phase 3:** the earlier top hits were filtered out.
+`irx2a` carries H3K4me1 + H3K4me3 (poised enhancer + promoter — the suspected
+regulatory role, now confirmed); `ovca2` overlaps a CTCF insulator; `vstm2b` is no
+longer open across all 11 stages (lost constitutivity at the added Oblong stage).
+`5S_rRNA` and ENSDARG00000103069 survive the full screen.
 
 ### Validation Benchmark
 - **pIGLET24b** (experimentally validated, strong expression): In 100% consensus peaks ✓,
   but NOT in final candidate list (inside Ensembl gene ENSDARG00000079167/skilb)
-- **pIGLET14a** (weaker expression): Only 80% consensus, NOT in final candidate list
+- **pIGLET14a** (weaker expression): In 100% consensus peaks ✓ (was 80% before the
+  11-stage expansion), still NOT in final candidate list (intronic)
 - **Result: INCONCLUSIVE** — pIGLET24b is excluded by strict gene-distal criteria despite
   being a validated functional site. This highlights that intronic sites can work
   experimentally but don't meet conservative GSH definitions.
@@ -130,11 +151,16 @@ transcripts). Some candidates may appear "inside" an Ensembl gene while being
 clearly intergenic by RefSeq. The pIGLET24b site demonstrates this — it works
 experimentally despite being within an Ensembl gene model.
 
-### Phase 3 Not Yet Active
-The regulatory element screen (H3K27ac, CTCF, conservation, mappability) is
-implemented but has no data loaded. Candidates near developmental TF loci
-(e.g., #1 near irx2a) may be distal enhancers. Adding DANIO-CODE ChIP tracks
-is the highest-priority next step.
+### Phase 3 — Active (regulatory) / Partial (conservation, mappability)
+The regulatory element screen is **active**: all four ChIP marks
+(H3K27ac, H3K4me1, H3K4me3, CTCF) plus supplement-derived validated enhancers,
+promoters, and novel lncRNA are loaded and applied (discard-whole). This confirmed
+the suspected enhancer role of the former #1 candidate near irx2a (H3K4me1+H3K4me3).
+
+Still **not loaded** (filters implemented, no-op until data added): phastCons/CNE
+conservation, mappability/blacklist/segmental duplications, GSH gene lists
+(cancer/dosage-sensitive/miRNA/UCE), Hi-C TAD boundaries, and DANIO-CODE COPE/DOPE.
+CTCF is from a single stage (Horsfield "Bud", ~10 hpf) — the only CTCF in DANIO-CODE.
 
 ### Pipeline Must Be Re-run After Changes
 ⚠️ Any changes to exclusion criteria, consensus parameters, or input data
@@ -179,9 +205,15 @@ cd zebrafish_safe_harbor
 
 # Process annotations (if re-running from scratch)
 bash scripts/03_process_annotations.sh
+python3 scripts/04b_extract_supplement_annotations.py   # supplement-derived tracks
 bash scripts/05_combine_exclusions.sh
 
+# Regulatory ChIP tracks (Phase 3)
+bash scripts/06d_download_chip.sh    # H3K4me1/H3K4me3/CTCF (H3K27ac pre-existing)
+bash scripts/06c_merge_chip.sh       # merge per-mark union BEDs
+
 # Normalize and find consensus
+# NOTE: 06b reads UNCOMPRESSED *.narrowPeak in peaks/ — gunzip -k any new .gz first
 python3 scripts/06b_normalize_scores.py
 cd scripts && bash 07_find_consensus_peaks.sh && cd ..
 
@@ -206,4 +238,4 @@ zebrafish_safe_harbor/
 └── README.md
 
 ## Branch
-This work is on branch pipeline-review.
+This work is on branch pipeline-review-v2.

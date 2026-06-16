@@ -6,32 +6,24 @@ This document tracks data files and resources that are not included in this repo
 
 ### PHASE 3: Biological Criteria Strengthening
 
-#### ChIP-seq Tracks (DANIO-CODE)
-Required for regulatory element exclusion and open-chromatin characterization.
+#### ChIP-seq Tracks (DANIO-CODE) — ✅ ACQUIRED
+All four marks are downloaded and merged into per-mark union BEDs in
+`annotation/chip/` by `scripts/06d_download_chip.sh` + `scripts/06c_merge_chip.sh`,
+and applied (discard-whole) in 08b. Host: `danio-code-dcc.genereg.net` (the old
+`danio-code.zfin.org/files/...` path now redirects to a homepage).
 
-- **H3K27ac** (active enhancer mark)
-  - Status: NOT INCLUDED
-  - Source: DANIO-CODE ChIP-seq data
-  - Usage: Exclude H3K27ac+ regions to avoid distal enhancers marked as "safe harbors"
-  - Config parameter: `CHIP_H3K27AC_BED` (add to config.sh)
+- **H3K27ac** (active enhancer) — ✅ Skarmeta Lab, 10 samples, 31,051 peaks. `CHIP_H3K27AC_BED`
+- **H3K4me1** (poised enhancer) — ✅ Skarmeta Lab, 4 stages, 32,511 peaks. `CHIP_H3K4ME1_BED`
+- **H3K4me3** (promoter) — ✅ Skarmeta Lab, 6 stages × reps, 28,108 peaks. `CHIP_H3K4ME3_BED`
+- **CTCF** (insulator) — ✅ Horsfield Lab, 43,679 peaks. `CHIP_CTCF_BED`
+  - ⚠️ CAVEAT: only "Bud" stage (~10 hpf) exists in all of DANIO-CODE; applied across all stages.
 
-- **H3K4me1** (enhancer/poised mark)
-  - Status: NOT INCLUDED
-  - Source: DANIO-CODE ChIP-seq data
-  - Usage: Exclude H3K4me1+ regions (enhancer chromatin)
-  - Config parameter: `CHIP_H3K4ME1_BED`
-
-- **H3K4me3** (promoter mark)
-  - Status: NOT INCLUDED
-  - Source: DANIO-CODE ChIP-seq data
-  - Usage: Exclude active promoters not caught by gene ±10kb buffer
-  - Config parameter: `CHIP_H3K4ME3_BED`
-
-- **CTCF** (architectural protein / insulator)
-  - Status: NOT INCLUDED
-  - Source: DANIO-CODE ChIP-seq data
-  - Usage: Exclude CTCF-bound regions (chromatin domain boundaries)
-  - Config parameter: `CHIP_CTCF_BED`
+#### Supplement-derived tracks (Baranasic et al. 2022) — ✅ ACQUIRED
+Extracted from `annotation/baranasic_2022_MOESM3.xlsx` by
+`scripts/04b_extract_supplement_annotations.py` into `annotation/regulatory/`:
+- **Validated enhancers** (T10/T11, 350 regions) — `VALIDATED_ENHANCERS_BED`
+- **Promoters** (consensus T4 + core T13, 20,990 regions) — `PROMOTERS_BED`
+- **Novel intergenic lncRNA/TUCP** (T3, 381 regions) — `NOVEL_LNCRNA_BED`
 
 #### Conservation Tracks
 
