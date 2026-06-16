@@ -22,6 +22,24 @@ source ./config.sh
 echo "=== Phase 3: Biological Criteria Filtering ==="
 echo ""
 
+# config.sh defines all data-track paths relative to the repo root, but the
+# filtering below runs from results/. Resolve those paths to absolute now (while
+# still at the repo root) so the tracks are found after we cd into results/.
+# (Previously these stayed root-relative and every Phase 3 filter silently
+# SKIPped because e.g. annotation/chip/... resolved under results/.)
+REPO_ROOT="$(pwd)"
+for _v in CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED \
+          CONSERVATION_BED CNE_BED MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED \
+          MIRNA_NCRNA_BED CANCER_ASSOCIATED_GENES_BED DOSAGE_SENSITIVE_GENES_BED \
+          UCE_BED TAD_BOUNDARIES_BED COPE_BED DOPE_BED \
+          VALIDATED_ENHANCERS_BED PROMOTERS_BED NOVEL_LNCRNA_BED; do
+    eval "_p=\${$_v:-}"
+    case "$_p" in
+        /*|"") : ;;                          # already absolute, or unset
+        *) eval "$_v=\"\$REPO_ROOT/\$_p\"" ;;
+    esac
+done
+
 cd results
 
 # ======================================================================
@@ -40,7 +58,10 @@ check_data() {
 }
 
 # ======================================================================
-# Utility function: subtract BED from candidates with chr-name guard
+# Utility function: DISCARD any candidate overlapping the track (chr-name guard)
+# Uses `bedtools intersect -v` (drop-whole), NOT `subtract` (trim): a safe-harbor
+# candidate that touches any regulatory/excluded element is removed entirely,
+# rather than trimmed into a sliver adjacent to that element.
 # ======================================================================
 subtract_track() {
     local candidates="$1"
@@ -69,10 +90,10 @@ subtract_track() {
             rm -f "${track}.chr_normalized.tmp"
             return 1
         fi
-        bedtools subtract -a "$candidates" -b "${track}.chr_normalized.tmp" > "$output"
+        bedtools intersect -v -a "$candidates" -b "${track}.chr_normalized.tmp" > "$output"
         rm -f "${track}.chr_normalized.tmp"
     else
-        bedtools subtract -a "$candidates" -b "$track" > "$output"
+        bedtools intersect -v -a "$candidates" -b "$track" > "$output"
     fi
 
     local before after removed
@@ -157,6 +178,46 @@ if [ ${#CHIP_TRACKS[@]} -gt 0 ]; then
 else
     echo "  No ChIP-seq tracks available. Skipping regulatory element exclusion."
     echo "  >> See DATA_NEEDED.md for required files."
+fi
+echo ""
+
+# ======================================================================
+# Step 1b: Supplement-derived regulatory exclusion (Baranasic et al. 2022)
+#   - validated enhancers (transgenic reporter-confirmed; high confidence)
+#   - consensus + core promoters
+#   - novel intergenic lncRNA/TUCP bodies (fills Ensembl annotation gaps)
+# ======================================================================
+echo "--- Step 1b: Supplement-derived Regulatory Exclusion ---"
+echo ""
+
+SUPP_APPLIED=false
+
+if check_data "$VALIDATED_ENHANCERS_BED" "Validated enhancers (T10/T11)"; then
+    subtract_track "$CURRENT_100" "$VALIDATED_ENHANCERS_BED" "filtered_100_enh.bed" "Validated enhancers"
+    subtract_track "$CURRENT_90"  "$VALIDATED_ENHANCERS_BED" "filtered_90_enh.bed"  "Validated enhancers"
+    subtract_track "$CURRENT_80"  "$VALIDATED_ENHANCERS_BED" "filtered_80_enh.bed"  "Validated enhancers"
+    CURRENT_100="filtered_100_enh.bed"; CURRENT_90="filtered_90_enh.bed"; CURRENT_80="filtered_80_enh.bed"
+    SUPP_APPLIED=true
+fi
+
+if check_data "$PROMOTERS_BED" "Promoters (consensus + core, T4/T13)"; then
+    subtract_track "$CURRENT_100" "$PROMOTERS_BED" "filtered_100_prom.bed" "Promoters"
+    subtract_track "$CURRENT_90"  "$PROMOTERS_BED" "filtered_90_prom.bed"  "Promoters"
+    subtract_track "$CURRENT_80"  "$PROMOTERS_BED" "filtered_80_prom.bed"  "Promoters"
+    CURRENT_100="filtered_100_prom.bed"; CURRENT_90="filtered_90_prom.bed"; CURRENT_80="filtered_80_prom.bed"
+    SUPP_APPLIED=true
+fi
+
+if check_data "$NOVEL_LNCRNA_BED" "Novel lncRNA/TUCP (T3)"; then
+    subtract_track "$CURRENT_100" "$NOVEL_LNCRNA_BED" "filtered_100_lnc.bed" "Novel lncRNA"
+    subtract_track "$CURRENT_90"  "$NOVEL_LNCRNA_BED" "filtered_90_lnc.bed"  "Novel lncRNA"
+    subtract_track "$CURRENT_80"  "$NOVEL_LNCRNA_BED" "filtered_80_lnc.bed"  "Novel lncRNA"
+    CURRENT_100="filtered_100_lnc.bed"; CURRENT_90="filtered_90_lnc.bed"; CURRENT_80="filtered_80_lnc.bed"
+    SUPP_APPLIED=true
+fi
+
+if [ "$SUPP_APPLIED" = false ]; then
+    echo "  No supplement-derived tracks available. Skipping."
 fi
 echo ""
 

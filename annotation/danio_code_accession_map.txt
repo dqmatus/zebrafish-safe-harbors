@@ -24,3 +24,16 @@ DCD003131SQ	DCD007336BS	2hpf	Zhang_Lab	High
 DCD003141SQ	DCD007336BS	2hpf	Zhang_Lab	High (replicate)
 DCD003126SQ	DCD007334BS	1hpf	Zhang_Lab	2-cell
 DCD003151SQ	DCD007334BS	1hpf	Zhang_Lab	2-cell (replicate)
+# --- Added 2026-06-16: peri-ZGA wild-type ATAC samples (DANIO-CODE manifest) ---
+# Staging by developmental identity, NOT the manifest's per-lab biosample container
+# (that container co-mingles stages, e.g. it places Dome with the unfertilized egg).
+# 1k-cell (3h) == the existing 3hpf biosample (DCD007337BS) -> added as replicates.
+DCD003143SQ	DCD007337BS	3hpf	Zhang_Lab	1k-cell (3hpf, replicate of mid-blastula biosample)
+DCD003153SQ	DCD007337BS	3hpf	Zhang_Lab	1k-cell (3hpf, replicate of mid-blastula biosample)
+# Oblong (3.7h) -> genuinely NEW stage (gap between 3hpf and 4.33hpf). Synthetic
+# collapse-key so it does not merge with the 2-cell files that share its URL dir.
+DCD003161SQ	DCD007334BS_OBL	3.7hpf	Zhang_Lab	Oblong (new stage)
+# Dome (4.5h, Zhang) == existing 4.33hpf Dome (Skarmeta) -> cross-lab depth.
+# Synthetic key so it does not merge with the unfertilized-egg files in its URL dir.
+DCD003129SQ	DCD007335BS_DOME	4.33hpf	Zhang_Lab	Dome (4.5h, cross-lab replicate of Skarmeta dome)
+DCD003133SQ	DCD007335BS_DOME	4.33hpf	Zhang_Lab	Dome (4.5h, cross-lab replicate, replicate)

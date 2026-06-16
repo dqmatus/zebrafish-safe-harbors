@@ -83,6 +83,12 @@ TAD_BOUNDARIES_BED="annotation/hic/TAD_boundaries.bed"
 COPE_BED="annotation/cope_dope/COPE_regions.bed"
 DOPE_BED="annotation/cope_dope/DOPE_regions.bed"
 
+# Supplement-derived regulatory tracks (Baranasic et al. 2022, danRer11)
+# Built by scripts/04b_extract_supplement_annotations.py
+VALIDATED_ENHANCERS_BED="annotation/regulatory/validated_enhancers.bed"  # T10+T11, experimentally validated
+PROMOTERS_BED="annotation/regulatory/promoters.bed"                      # T4 consensus + T13 core promoters
+NOVEL_LNCRNA_BED="annotation/regulatory/novel_lncrna.bed"               # T3 intergenic lncRNA/TUCP bodies
+
 # ======================================================================
 # Phase 3: Mappability & Blacklist
 # ======================================================================
@@ -156,6 +162,7 @@ export GSH_MIRNA_BUFFER_KB GSH_UCE_BUFFER_KB
 export CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED
 export CONSERVATION_BED CNE_BED TAD_BOUNDARIES_BED
 export COPE_BED DOPE_BED
+export VALIDATED_ENHANCERS_BED PROMOTERS_BED NOVEL_LNCRNA_BED
 export MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED MAPPABILITY_THRESHOLD
 export GENE_BED_COMPREHENSIVE MIRNA_NCRNA_BED
 export DOSAGE_SENSITIVE_GENES_BED CANCER_ASSOCIATED_GENES_BED UCE_BED
