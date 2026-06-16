@@ -23,7 +23,7 @@ using DANIO-CODE ATAC-seq data.
 
 ## Methodology
 
-### Consensus Peak Calling (Phase 2 redesign)
+### Consensus Peak Calling (Phase 2)
 1. Extract peak summits (narrowPeak col-10) with quantile-normalized scores
 2. Collapse replicates to biosample level (median score)
 3. Collapse biosamples to developmental stage level (median score)
@@ -32,10 +32,10 @@ using DANIO-CODE ATAC-seq data.
 6. Filter by consensus tiers (80%, 90%, 100% of stages)
 
 ### Exclusion Criteria
+- Gene bodies ±10kb (all Ensembl genes) — enforced via master_exclusions.bed
 - Exons (Ensembl 110)
 - Essential genes ±20kb
 - Transposable elements (DNA, LINE, SINE, LTR, Retroposon, RC classes)
-- Gene bodies ±10kb (all Ensembl genes)
 - Telomere regions (500kb from chromosome ends)
 - Minimum region size: 300bp
 
@@ -43,7 +43,7 @@ using DANIO-CODE ATAC-seq data.
 Candidates are ranked by a composite score incorporating:
 - Stage count (open in X/10 stages) — primary weight
 - Region size (larger = better for construct design)
-- Distance from nearest gene (penalty for distance=0, bonus for >50kb)
+- Distance from nearest gene (+50 for >50kb, +30 for >10kb, -200 for inside gene)
 - sgRNA availability (when data provided)
 - Conservation overlap (penalty, when data provided)
 - Repeat content (penalty)
@@ -62,35 +62,54 @@ When data is provided (see DATA_NEEDED.md), additional filters are applied:
 |--------|-------|
 | ATAC-seq samples | 25 (20 in accession map) |
 | Biosamples | 11 |
-| Developmental stages | 10 (0hpf – 12hpf) |
-| Consensus peaks (100%) | 31,617 |
-| Consensus peaks (90%) | 60,178 |
-| Consensus peaks (80%) | 94,390 |
-| Safe harbors after filtering (100%) | 20,075 |
-| Safe harbors after filtering (90%) | 39,566 |
-| Safe harbors after filtering (80%) | 61,563 |
+| Developmental stages | 10 (0 – 48 hpf) |
+| Stage range | Unfertilized egg → Long-pec (2 dpf) |
+| Consensus peaks (100%) | ~31,000 |
+| Consensus peaks (90%) | ~60,000 |
+| Consensus peaks (80%) | ~94,000 |
+| Safe harbors after filtering (100%) | 4,503 |
 
-### Top 5 Candidates (IGV-validated)
+### Developmental Stages
+| Stage | Time | Lab | Biosamples |
+|-------|------|-----|------------|
+| Unfertilized egg | 0 hpf | Zhang | 1 |
+| 2-cell | 1 hpf | Zhang | 1 (2 reps) |
+| High | 2 hpf | Zhang | 1 (2 reps) |
+| Mid blastula | 3 hpf | Zhang | 1 |
+| Dome | 4.33 hpf | Skarmeta | 1 (2 reps) |
+| Shield | 6 hpf | Skarmeta + Zhang | 2 (4 reps) |
+| 75%-epiboly | 8 hpf | Skarmeta | 1 (2 reps) |
+| 5-9 somites | 12 hpf | Skarmeta | 1 (2 reps) |
+| Prim-5 | 24 hpf | Skarmeta | 1 (2 reps) |
+| Long-pec | 48 hpf | Skarmeta | 1 (2 reps) |
+
+Stage assignments verified against Marlétaz et al. 2018 supplemental table
+(DOI: 10.1038/s41586-018-0734-6) and DANIO-CODE data portal.
+
+### Top 5 Candidates (IGV-validated, main chromosomes, ≥800bp)
 
 | # | Locus | Size | Nearest Gene | Distance | GC% |
 |---|-------|------|--------------|----------|-----|
-| 1 | chr16:683,375-684,873 | 1,498bp | irx2a | 120kb | 48.3% |
-| 2 | chr17:47,977,414-47,979,001 | 1,587bp | slc39a9 | 148kb | 49.7% |
-| 3 | chr20:4,566,962-4,568,172 | 1,210bp | ENSDARG00000116556 | 112kb | 50.3% |
-| 4 | chr18:23,726,829-23,728,108 | 1,279bp | ENSDARG00000097764 | 102kb | 51.4% |
-| 5 | chr13:5,731,152-5,732,028 | 876bp | ENSDARG00000095303 | 137kb | 47.6% |
+| 1 | chr16:683,375-684,868 | 1,493bp | irx2a | 120kb | 51.6% |
+| 2 | chr7:45,155,247-45,156,838 | 1,591bp | vstm2b | 79kb | 42.2% |
+| 3 | chr14:48,494,914-48,496,373 | 1,459bp | 5S_rRNA | 80kb | 46.2% |
+| 4 | chr15:47,252,117-47,253,549 | 1,432bp | ENSDARG00000103069 | 59kb | 43.6% |
+| 5 | chr10:35,762,801-35,764,213 | 1,412bp | ovca2 | 94kb | 40.2% |
 
 All candidates are:
-- Open in 10/10 developmental stages (constitutive)
-- Located in gene deserts >250kb
-- >100kb from nearest Ensembl gene
+- Open in 10/10 developmental stages (0 – 48 hpf, constitutive)
+- Located in gene deserts >200kb
+- >50kb from nearest Ensembl gene
 - Zero repeat overlap
-- GC content 47-51%
+- GC content 40-52%
 
 ### Validation Benchmark
-- **pIGLET24b** (experimentally validated, strong expression): In 100% consensus ✓, ranked in final candidate list ✓
-- **pIGLET14a** (weaker expression): Only 80% consensus, NOT in final candidate list ✓
-- Pipeline correctly ranks 24b above 14a: **PASS**
+- **pIGLET24b** (experimentally validated, strong expression): In 100% consensus peaks ✓,
+  but NOT in final candidate list (inside Ensembl gene ENSDARG00000079167/skilb)
+- **pIGLET14a** (weaker expression): Only 80% consensus, NOT in final candidate list
+- **Result: INCONCLUSIVE** — pIGLET24b is excluded by strict gene-distal criteria despite
+  being a validated functional site. This highlights that intronic sites can work
+  experimentally but don't meet conservative GSH definitions.
 
 ## Important Limitations
 
@@ -102,7 +121,8 @@ transcriptionally neutral. These regions may be:
 - Non-coding RNA loci not in current annotations
 
 Phase 3 data (ChIP-seq, conservation) is needed to distinguish "open and inert"
-from "open and regulatory." See DATA_NEEDED.md.
+from "open and regulatory." The DANIO-CODE COPE/DOPE tracks (open chromatin
+lacking active histone marks) would be particularly valuable. See DATA_NEEDED.md.
 
 ### Annotation Discrepancies
 Ensembl gene models are often more inclusive than RefSeq (longer UTRs, alternative
@@ -110,19 +130,23 @@ transcripts). Some candidates may appear "inside" an Ensembl gene while being
 clearly intergenic by RefSeq. The pIGLET24b site demonstrates this — it works
 experimentally despite being within an Ensembl gene model.
 
-### Pipeline Must Be Re-run
-⚠️ **These results reflect the corrected pipeline.** The bug fixes in Phase 1
-(chr-naming mismatch, transposon class filter, gene-distal enforcement) and the
-Phase 2 methodology changes (summit consensus, replicate collapsing, stage
-stratification) fundamentally change what gets filtered. **Do not use candidates
-from previous runs.** Design sgRNAs only from the current `candidate_feature_table.tsv`.
+### Phase 3 Not Yet Active
+The regulatory element screen (H3K27ac, CTCF, conservation, mappability) is
+implemented but has no data loaded. Candidates near developmental TF loci
+(e.g., #1 near irx2a) may be distal enhancers. Adding DANIO-CODE ChIP tracks
+is the highest-priority next step.
+
+### Pipeline Must Be Re-run After Changes
+⚠️ Any changes to exclusion criteria, consensus parameters, or input data
+require re-running scripts 07 → 08 → 08b → 09 → 10. Do not design sgRNAs
+from stale results.
 
 ## Configuration
 
 All parameters are centralized in `config.sh`:
 - Summit window: ±150bp
 - Consensus tiers: 80/90/100%
-- Gene buffer: 10kb
+- Gene buffer: 10kb (via master_exclusions.bed)
 - Essential gene buffer: 20kb
 - Telomere exclusion: 500kb
 - Minimum harbor size: 300bp
@@ -130,19 +154,20 @@ All parameters are centralized in `config.sh`:
 
 ## Data Provenance
 
-| Resource | Version/Date |
-|----------|-------------|
+| Resource | Version/Source |
+|----------|---------------|
 | Genome | GRCz11 (danRer11) |
 | Gene annotation | Ensembl release 110 |
 | Repeat annotation | UCSC RepeatMasker (rmsk.txt) |
 | ATAC-seq | DANIO-CODE (Skarmeta Lab + Zhang Lab) |
+| Stage verification | Marlétaz et al. 2018 (10.1038/s41586-018-0734-6) |
 
 ## Requirements
 
 - bedtools (≥2.26)
 - Python 3 with numpy, pandas
 - bash with pipefail support
-- ~5GB disk space for annotations + peaks
+- conda environment: `zebrafish_atac`
 
 See `DATA_NEEDED.md` for external data required for full Phase 3-5 execution.
 
@@ -165,3 +190,20 @@ bash scripts/08_find_safe_harbors.sh
 bash scripts/08b_biological_filters.sh
 bash scripts/09_annotate_candidates.sh
 bash scripts/10_benchmark.sh
+
+## Repository Structure
+zebrafish_safe_harbor/
+├── scripts/          # Pipeline scripts (01-10)
+├── config.sh         # Central configuration
+├── annotation/       # Gene/repeat annotations (not in git - see setup)
+│   ├── benchmarks/   # pIGLET coordinates
+│   └── danio_code_accession_map.txt
+├── peaks/            # ATAC-seq narrowPeak files (not in git)
+├── reference/        # GRCz11 genome (not in git)
+├── results/          # Pipeline output
+│   └── candidate_feature_table.tsv
+├── DATA_NEEDED.md    # External data requirements
+└── README.md
+
+## Branch
+This work is on branch pipeline-review.
