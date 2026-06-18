@@ -24,6 +24,9 @@ using DANIO-CODE ATAC-seq data.
                               (discard-whole: any candidate touching a track is dropped)
 09_annotate_candidates.sh   → Rich feature table with composite ranking
 10_benchmark.sh             → Validation against pIGLET/SB known sites
+11_design_sgrnas.py         → Enumerate on-target SpCas9 (NGG) guides for top
+                              candidates (specificity/efficiency scored in CRISPOR;
+                              picks in results/sgrna_shortlist.tsv)
 ```
 
 ## Methodology
@@ -122,6 +125,31 @@ All candidates are:
 regulatory role, now confirmed); `ovca2` overlaps a CTCF insulator; `vstm2b` is no
 longer open across all 11 stages (lost constitutivity at the added Oblong stage).
 `5S_rRNA` and ENSDARG00000103069 survive the full screen.
+
+### Candidate sgRNA Guides (SpCas9, danRer11)
+
+Top candidates were submitted to **CRISPOR** (danRer11, NGG PAM) for guide
+specificity (MIT/CFD) + efficiency (Doench '16) scoring; off-targets were
+cross-checked for in-gene (exon/intron) hits. Recommended guide per candidate
+(full top-3 with all metrics in `results/sgrna_shortlist.tsv`):
+
+| # | Locus | Guide (20nt) | PAM | MIT | Off-tgt | Doench | In-gene off-tgts |
+|---|-------|--------------|-----|-----|---------|--------|------------------|
+| 1 | chr12 nrxn1a | `TGCGCGGTTAGCGCTACTCG` | TGG | 100 | 2 | 64 | none ✅ |
+| 5 | chr14 | `AGTTAACTCGGCGTACTTGG` | GGG | 99 | 3 | 64 | 1 intron |
+| 4 | chr6 rgs8 | `GCTTAGCGGCAAGTCGCATT` | CGG | 100 | 4 | 50 | 4 intron, 0 exon |
+| 3 | chr24 inhbaa | `AGGTCTGTCGACACGGATTG` | TGG | 99 | 7 | 66 | 2 exon (4mm, low score) |
+| 2 | chr20 | `ACTTTCATGGGGACCCCCCT` | CGG | 100 | 4 | 58 | 1 exon; cut near edge |
+
+- **chr12/nrxn1a** is the standout: perfect specificity, zero in-gene off-targets,
+  central cut site.
+- **chr20 and chr24** are weakest — no top guide fully avoids exonic off-targets
+  (all such hits are 4-mismatch with low MIT off-target scores, so low risk).
+
+> **NOTE — off-target tooling:** local `cas-offinder` was unreliable on this
+> machine (OpenCL CPU device absent; the GPU backend produced spurious hits that
+> failed genome verification). **Use CRISPOR for specificity**, not the local run.
+> `scripts/11_design_sgrnas.py` is on-target enumeration only.
 
 ### Validation Benchmark
 - **pIGLET24b** (experimentally validated, strong expression): In 100% consensus peaks ✓,
@@ -225,15 +253,18 @@ bash scripts/10_benchmark.sh
 
 ## Repository Structure
 zebrafish_safe_harbor/
-├── scripts/          # Pipeline scripts (01-10)
+├── scripts/          # Pipeline scripts (01-11)
 ├── config.sh         # Central configuration
 ├── annotation/       # Gene/repeat annotations (not in git - see setup)
 │   ├── benchmarks/   # pIGLET coordinates
+│   ├── chip/         # ChIP-seq peaks + per-mark union BEDs (not in git)
+│   ├── regulatory/   # supplement-derived enhancer/promoter/lncRNA BEDs (not in git)
 │   └── danio_code_accession_map.txt
 ├── peaks/            # ATAC-seq narrowPeak files (not in git)
 ├── reference/        # GRCz11 genome (not in git)
 ├── results/          # Pipeline output
-│   └── candidate_feature_table.tsv
+│   ├── candidate_feature_table.tsv
+│   └── sgrna_shortlist.tsv   # CRISPOR-scored guides for top candidates
 ├── DATA_NEEDED.md    # External data requirements
 └── README.md
 
