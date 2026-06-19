@@ -161,26 +161,30 @@ cross-checked for in-gene (exon/intron) hits. Recommended guide per candidate
 > `scripts/11_design_sgrnas.py` is on-target enumeration only.
 
 ### Validation Benchmark
-Both pIGLET sites are in the 100% consensus (constitutively open) but excluded from
-the final candidate list. With the full ChIP screen loaded, the *mechanism* is now
-explicit:
+Three experimentally-validated attP/integration sites are benchmarked. All three are
+in the 100% consensus (constitutively open) but excluded from the final candidate
+list — and with the full ChIP screen loaded, *why* each is excluded is now explicit:
 
-| Site | Expression | H3K4me3 | H3K27ac | H3K4me1 | In active chromatin? |
-|------|-----------|---------|---------|---------|----------------------|
-| **pIGLET24b** | strong | 1000bp (full) | 683bp | 340bp | **YES — active promoter + enhancer** |
-| pIGLET14a | weak | — | — | — | no active marks |
+| Site | Phenotype | Active marks | Gene context | Why excluded |
+|------|-----------|--------------|--------------|--------------|
+| **pIGLET24b** | strong expression | H3K4me3 1000bp + H3K27ac 683bp + H3K4me1 340bp | gene-associated | **active chromatin** |
+| pIGLET14a | weak expression | none | gene-associated | gene-associated |
+| **tpl102** (Roberts 2014) | position-effect-*resistant* | minimal (25bp H3K4me3) | **341bp from ube2ia + repeat** | gene-proximal + repeat |
 
-- **pIGLET24b** drives strong expression *because* it sits in active chromatin
-  (full H3K4me3 promoter + H3K27ac/H3K4me1 enhancer) — and is gene-associated.
-  Our inert-screen **correctly rejects it**: it is "open but not inert."
-- **pIGLET14a** (weak) is gene-associated but carries no active marks.
+- **pIGLET24b** expresses strongly *because* it sits in active chromatin (full H3K4me3
+  promoter + H3K27ac/H3K4me1 enhancer) — correctly rejected as "open but not inert."
+- **tpl102** is largely inert (almost no active marks) yet works as a consistent,
+  position-effect-resistant landing site **despite being only ~341bp from a gene**
+  (`ube2ia`) and overlapping a repeat — so it fails the gene-distal/repeat criteria.
 
-**Interpretation — not a miss, by design.** The pIGLET sites optimize *expression via
-active chromatin*; this pipeline optimizes *safety via inertness* (constitutively
-open but free of active marks, gene-distal). Excluding pIGLET24b is the screen
-working as intended. The trade-off cuts both ways: inert candidates (e.g. chr12/
-nrxn1a) may express more modestly than an active-chromatin site — the real test is
-empirical (does a construct at the candidate express well without dysregulation?).
+**Interpretation — not misses, by design.** None of the three validated sites lie in
+the deep, fully-inert gene deserts this pipeline targets: pIGLET24b is active
+chromatin, and pIGLET14a/tpl102 are gene-proximal. The pipeline optimizes *safety via
+inertness*; the validated sites optimize *expression / position-effect resistance* by
+other means. tpl102 is the most instructive: it shows a gene-proximal site can be a
+good landing pad — i.e. our strict >10 kb gene-distance criterion may be conservative.
+The trade-off cuts both ways (inert candidates like chr12/nrxn1a may express more
+modestly), so the decisive test remains empirical.
 
 ## Important Limitations
 

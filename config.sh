@@ -126,6 +126,8 @@ SGRNA_TOOL="CRISPOR"
 # ======================================================================
 PIGLET_14A_BED="annotation/benchmarks/pIGLET14a_coords.bed"
 PIGLET_24B_BED="annotation/benchmarks/pIGLET24b_coords.bed"
+# tpl102: position-effect-resistant attP landing site (Roberts et al. 2014, Development)
+TPL102_BED="annotation/benchmarks/tpl102_coords.bed"
 SB_FOUNDER_SITES_BED="annotation/benchmarks/SB_founder_sites.bed"
 
 # ======================================================================
@@ -173,6 +175,6 @@ export MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED MAPPABILITY_THRESHOLD
 export GENE_BED_COMPREHENSIVE MIRNA_NCRNA_BED
 export DOSAGE_SENSITIVE_GENES_BED CANCER_ASSOCIATED_GENES_BED UCE_BED
 export SGRNA_BED SGRNA_MIN_SPECIFICITY SGRNA_TOOL
-export PIGLET_14A_BED PIGLET_24B_BED SB_FOUNDER_SITES_BED
+export PIGLET_14A_BED PIGLET_24B_BED TPL102_BED SB_FOUNDER_SITES_BED
 export ENSEMBL_RELEASE GENOME_BUILD RMSK_SOURCE DANIO_CODE_METADATA
 export VERBOSE LOGFILE

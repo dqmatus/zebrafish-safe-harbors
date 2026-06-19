@@ -22,6 +22,7 @@ cd results
 # Resolve paths before changing directory
 PIGLET_14A_BED="../${PIGLET_14A_BED}"
 PIGLET_24B_BED="../${PIGLET_24B_BED}"
+TPL102_BED="../${TPL102_BED}"
 SB_FOUNDER_SITES_BED="../${SB_FOUNDER_SITES_BED}"
 
 # ======================================================================
@@ -155,6 +156,36 @@ else
     echo ""
     echo "  pIGLET benchmark skipped — coordinates not available."
     echo "  >> Add pIGLET14a and pIGLET24b coordinates to DATA_NEEDED.md locations"
+fi
+echo ""
+
+# ======================================================================
+# Benchmark 1b: tpl102 (Roberts et al. 2014) — position-effect-resistant attP
+# ======================================================================
+echo "--- Benchmark 1b: tpl102 attP Landing Site ---"
+echo ""
+if check_benchmark_data "$TPL102_BED" "tpl102 coordinates"; then
+    awk 'BEGIN{OFS="\t"} { if ($1 !~ /^chr/) $1 = "chr" $1; print }' "$TPL102_BED" > tpl102_chr.bed
+    echo "  tpl102 overlaps:"
+    for tier in 100 90 80; do
+        PEAKS="consensus_peaks_${tier}pct.bed"
+        [ -f "$PEAKS" ] && echo "    ${tier}% consensus peaks: $(bedtools intersect -a tpl102_chr.bed -b "$PEAKS" -u | wc -l) hit(s)"
+    done
+    if [ -f "candidate_feature_table.tsv" ]; then
+        echo ""
+        while IFS=$'\t' read -r chr start end rest; do
+            RANK=$(awk -v c="$chr" -v s="$start" -v e="$end" \
+                'NR>1 && $1==c && $2<=e && $3>=s {print NR-1; exit}' candidate_feature_table.tsv)
+            if [ -n "$RANK" ]; then
+                echo "    tpl102 ($chr:$start-$end) → Rank #$RANK"
+            else
+                echo "    tpl102 ($chr:$start-$end) → NOT in final candidate list (gene-proximal: ~341bp from ube2ia + repeat)"
+            fi
+        done < tpl102_chr.bed
+    fi
+    rm -f tpl102_chr.bed
+else
+    echo "  tpl102 benchmark skipped — coordinates not available."
 fi
 echo ""
 
