@@ -75,14 +75,16 @@ When data is provided (see DATA_NEEDED.md), additional filters are applied:
 | Consensus peaks (90%) | 99,715 |
 | Consensus peaks (80%) | 139,793 |
 | Gene-distal + size-filtered (100%) | 4,771 |
-| **Final safe harbors after Phase 3 (100%)** | **2,372** |
+| **Final safe harbors after Phase 3 (100%)** | **2,370** |
 
-Phase 3 regulatory screen (discard-whole) removes 4,771 → 2,372 at the 100% tier:
-ChIP marks −2,360, validated enhancers −3, promoters −25, novel lncRNA −11.
-~49% of gene-distal constitutive peaks carry an active/poised-enhancer or insulator
-mark. ChIP = **46 samples across 6 DANIO-CODE labs** (Skarmeta, Cairns, Mueller,
+Phase 3 regulatory screen (discard-whole) removes 4,771 → 2,370 at the 100% tier:
+ChIP active marks −2,360, validated enhancers −3, promoters −25, novel lncRNA −11,
+H3K27me3 (Polycomb) −2. ~49% of gene-distal constitutive peaks carry an
+active/poised-enhancer or insulator mark; almost none are Polycomb-silenced
+(candidates are open chromatin) — confirming they are genuinely inert.
+ChIP = **50 samples across 6 DANIO-CODE labs** (Skarmeta, Cairns, Mueller,
 Schier, Bartel, Zon; Horsfield for CTCF), embryonic stages only — H3K27ac (13),
-H3K4me1 (8), H3K4me3 (23), CTCF (2).
+H3K4me1 (8), H3K4me3 (23), H3K27me3 (4), CTCF (2).
 
 ### Developmental Stages
 | Stage | Time | Lab |

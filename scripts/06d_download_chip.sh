@@ -82,9 +82,22 @@ for u in \
     curl -fsSL -O "$BASE/$u"
 done
 
+# --- H3K27me3 (Polycomb-silenced; repressive-mark exclusion) -----------------
+# Embryonic only (Skarmeta + Schier; adult excluded). Used to avoid landing in
+# silenced chromatin where a transgene could itself be silenced.
+echo "H3K27me3 (Skarmeta + Schier, embryonic)..."
+for u in \
+  "DCD006633BS/ChIP-seq_Schier_Lab_H3K27me3_0002AS.DCD002753SQ.danRer11.USERdanio-user.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006178BS/ChIP-seq_Skarmeta_Lab_H3K27me3_0002AS.DCD000631SQ.danRer11.USERpanosfirbas.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006173BS/ChIP-seq_Skarmeta_Lab_H3K27me3_0002AS.DCD000630SQ.danRer11.USERpanosfirbas.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006175BS/ChIP-seq_Skarmeta_Lab_H3K27me3_0002AS.DCD000632SQ.danRer11.USERpanosfirbas.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" ; do
+    curl -fsSL -O "$BASE/$u"
+done
+
 echo ""
 echo "=== Download complete ==="
 echo "H3K4me1: $(ls *H3K4me1*.narrowPeak.gz 2>/dev/null | wc -l) files"
 echo "H3K4me3: $(ls *H3K4me3*.narrowPeak.gz 2>/dev/null | wc -l) files"
 echo "H3K27ac: $(ls *H3K27[Aa]c*.narrowPeak.gz 2>/dev/null | wc -l) files"
+echo "H3K27me3:$(ls *H3K27me3*.narrowPeak.gz 2>/dev/null | wc -l) files"
 echo "CTCF:    $(ls *CTCF*.narrowPeak.gz 2>/dev/null | wc -l) files"

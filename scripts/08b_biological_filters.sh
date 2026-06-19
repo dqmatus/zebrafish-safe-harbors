@@ -28,7 +28,7 @@ echo ""
 # (Previously these stayed root-relative and every Phase 3 filter silently
 # SKIPped because e.g. annotation/chip/... resolved under results/.)
 REPO_ROOT="$(pwd)"
-for _v in CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED \
+for _v in CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED CHIP_H3K27ME3_BED \
           CONSERVATION_BED CNE_BED MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED \
           MIRNA_NCRNA_BED CANCER_ASSOCIATED_GENES_BED DOSAGE_SENSITIVE_GENES_BED \
           UCE_BED TAD_BOUNDARIES_BED COPE_BED DOPE_BED \
@@ -218,6 +218,23 @@ fi
 
 if [ "$SUPP_APPLIED" = false ]; then
     echo "  No supplement-derived tracks available. Skipping."
+fi
+echo ""
+
+# ======================================================================
+# Step 1c: Polycomb-silenced (H3K27me3) exclusion
+#   Repressive mark — distinct rationale from the active marks above: avoid
+#   landing in silenced chromatin where the transgene could itself be silenced.
+# ======================================================================
+echo "--- Step 1c: Polycomb-silenced (H3K27me3) Exclusion ---"
+echo ""
+if check_data "$CHIP_H3K27ME3_BED" "H3K27me3 (Polycomb-silenced)"; then
+    subtract_track "$CURRENT_100" "$CHIP_H3K27ME3_BED" "filtered_100_k27me3.bed" "H3K27me3"
+    subtract_track "$CURRENT_90"  "$CHIP_H3K27ME3_BED" "filtered_90_k27me3.bed"  "H3K27me3"
+    subtract_track "$CURRENT_80"  "$CHIP_H3K27ME3_BED" "filtered_80_k27me3.bed"  "H3K27me3"
+    CURRENT_100="filtered_100_k27me3.bed"; CURRENT_90="filtered_90_k27me3.bed"; CURRENT_80="filtered_80_k27me3.bed"
+else
+    echo "  No H3K27me3 track available. Skipping."
 fi
 echo ""
 

@@ -17,6 +17,9 @@ match the 0-48 hpf ATAC window). Downloaded by `06d_download_chip.sh`.
 - **H3K27ac** (active enhancer) — ✅ 13 samples (Skarmeta/Cairns/Zon), 34,297 peaks. `CHIP_H3K27AC_BED`
 - **H3K4me1** (poised enhancer) — ✅ 8 samples (Skarmeta/Cairns), 36,162 peaks. `CHIP_H3K4ME1_BED`
 - **H3K4me3** (promoter) — ✅ 23 samples (Skarmeta/Mueller/Schier/Bartel/Zon/Cairns), 41,028 peaks. `CHIP_H3K4ME3_BED`
+- **H3K27me3** (Polycomb-silenced; repressive) — ✅ 4 samples (Skarmeta/Schier), `CHIP_H3K27ME3_BED`.
+  Distinct rationale: avoid landing in silenced chromatin (transgene could be silenced).
+  Applied as 08b Step 1c. Low impact (−2 at 100% tier) since candidates are open chromatin.
 - **CTCF** (insulator) — ✅ Horsfield Lab, 43,679 peaks. `CHIP_CTCF_BED`
   - ⚠️ CAVEAT: only "Bud" stage (~10 hpf) exists in all of DANIO-CODE; applied across all stages.
   - Note: Zon's H3K27ac file is named `H3K27Ac` (capital A); `06c` matches case-insensitively.

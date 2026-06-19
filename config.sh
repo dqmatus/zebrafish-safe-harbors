@@ -71,6 +71,9 @@ CHIP_H3K27AC_BED="annotation/chip/H3K27ac_peaks.bed"
 CHIP_H3K4ME1_BED="annotation/chip/H3K4me1_peaks.bed"
 CHIP_H3K4ME3_BED="annotation/chip/H3K4me3_peaks.bed"
 CHIP_CTCF_BED="annotation/chip/CTCF_peaks.bed"
+# H3K27me3 = repressive/Polycomb mark; excluded to avoid landing in silenced
+# chromatin where a transgene could itself be silenced (distinct from active marks)
+CHIP_H3K27ME3_BED="annotation/chip/H3K27me3_peaks.bed"
 
 # Conservation tracks
 CONSERVATION_BED="annotation/conservation/phastCons_conserved.bed"
@@ -159,7 +162,7 @@ export GENE_BUFFER_KB ESSENTIAL_GENE_BUFFER_KB TELOMERE_END_DISTANCE
 export CENTROMERE_USE MIN_HARBOR_SIZE
 export GSH_GENE_BUFFER_KB GSH_CANCER_GENE_BUFFER_KB GSH_DOSAGE_SENSITIVE_BUFFER_KB
 export GSH_MIRNA_BUFFER_KB GSH_UCE_BUFFER_KB
-export CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED
+export CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED CHIP_H3K27ME3_BED
 export CONSERVATION_BED CNE_BED TAD_BOUNDARIES_BED
 export COPE_BED DOPE_BED
 export VALIDATED_ENHANCERS_BED PROMOTERS_BED NOVEL_LNCRNA_BED

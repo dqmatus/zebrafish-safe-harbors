@@ -29,6 +29,7 @@ MARKS=(
     "H3K27ac:H3K27ac_peaks.bed"
     "H3K4me1:H3K4me1_peaks.bed"
     "H3K4me3:H3K4me3_peaks.bed"
+    "H3K27me3:H3K27me3_peaks.bed"
     "CTCF:CTCF_peaks.bed"
 )
 
