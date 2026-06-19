@@ -12,11 +12,14 @@ All four marks are downloaded and merged into per-mark union BEDs in
 and applied (discard-whole) in 08b. Host: `danio-code-dcc.genereg.net` (the old
 `danio-code.zfin.org/files/...` path now redirects to a homepage).
 
-- **H3K27ac** (active enhancer) — ✅ Skarmeta Lab, 10 samples, 31,051 peaks. `CHIP_H3K27AC_BED`
-- **H3K4me1** (poised enhancer) — ✅ Skarmeta Lab, 4 stages, 32,511 peaks. `CHIP_H3K4ME1_BED`
-- **H3K4me3** (promoter) — ✅ Skarmeta Lab, 6 stages × reps, 28,108 peaks. `CHIP_H3K4ME3_BED`
+Embryonic stages from all DANIO-CODE labs (adult "90 Days-2 Years" excluded to
+match the 0-48 hpf ATAC window). Downloaded by `06d_download_chip.sh`.
+- **H3K27ac** (active enhancer) — ✅ 13 samples (Skarmeta/Cairns/Zon), 34,297 peaks. `CHIP_H3K27AC_BED`
+- **H3K4me1** (poised enhancer) — ✅ 8 samples (Skarmeta/Cairns), 36,162 peaks. `CHIP_H3K4ME1_BED`
+- **H3K4me3** (promoter) — ✅ 23 samples (Skarmeta/Mueller/Schier/Bartel/Zon/Cairns), 41,028 peaks. `CHIP_H3K4ME3_BED`
 - **CTCF** (insulator) — ✅ Horsfield Lab, 43,679 peaks. `CHIP_CTCF_BED`
   - ⚠️ CAVEAT: only "Bud" stage (~10 hpf) exists in all of DANIO-CODE; applied across all stages.
+  - Note: Zon's H3K27ac file is named `H3K27Ac` (capital A); `06c` matches case-insensitively.
 
 #### Supplement-derived tracks (Baranasic et al. 2022) — ✅ ACQUIRED
 Extracted from `annotation/baranasic_2022_MOESM3.xlsx` by

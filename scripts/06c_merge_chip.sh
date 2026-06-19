@@ -13,6 +13,11 @@
 
 set -euo pipefail
 
+# Match mark tokens case-insensitively: some DANIO-CODE files use "H3K27Ac"
+# (capital A) vs our "H3K27ac" token (e.g. Zon Lab). nullglob so an absent mark
+# expands to nothing rather than a literal pattern.
+shopt -s nocaseglob nullglob
+
 cd annotation/chip
 
 # ----------------------------------------------------------------------

@@ -53,8 +53,38 @@ for u in \
     curl -fsSL -O "$BASE/$u"
 done
 
+# --- Additional EMBRYONIC-stage ChIP from other DANIO-CODE labs ---------------
+# Cairns / Mueller / Schier / Bartel / Zon labs (embryonic stages only; adult
+# "90 Days-2 Years" deliberately excluded to match the 0-48 hpf ATAC window).
+# Note: Zon's H3K27ac file is named "H3K27Ac" (capital A) — 06c matches case-
+# insensitively so it still merges into the H3K27ac union.
+echo "Other-lab embryonic H3K4me1/H3K4me3/H3K27ac..."
+for u in \
+  "DCD007130BS/ChIP-seq_Cairns_Lab_H3K4me1_0002AS.DCD002675SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007130BS/ChIP-seq_Cairns_Lab_H3K4me1_0002AS.DCD002679SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H3K4me1_0002AS.DCD002714SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H3K4me1_0002AS.DCD002666SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007025BS/ChIP-seq_Bartel_Lab_H3K4me3_0001AS.DCD002371SQ.danRer11.USERmickael.dong.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007026BS/ChIP-seq_Bartel_Lab_H3K4me3_0001AS.DCD002380SQ.danRer11.USERmickael.dong.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006678BS/ChIP-seq_Mueller_lab_H3K4me3_0006AS.DCD001524SQ.danRer11.USERdunjanik.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006677BS/ChIP-seq_Mueller_lab_H3K4me3_0006AS.DCD001529SQ.danRer11.USERdunjanik.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006675BS/ChIP-seq_Mueller_lab_H3K4me3_0006AS.DCD001525SQ.danRer11.USERdunjanik.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006675BS/ChIP-seq_Mueller_lab_H3K4me3_0006AS.DCD001540SQ.danRer11.USERdunjanik.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006673BS/ChIP-seq_Mueller_lab_H3K4me3_0006AS.DCD001530SQ.danRer11.USERdunjanik.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006673BS/ChIP-seq_Mueller_lab_H3K4me3_0006AS.DCD001517SQ.danRer11.USERdunjanik.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007150BS/ChIP-seq_Schier_Lab_H3K4me3_0002AS.DCD002755SQ.danRer11.USERdanio-user.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006634BS/ChIP-seq_Schier_Lab_H3K4me3_0002AS.DCD002758SQ.danRer11.USERdanio-user.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006633BS/ChIP-seq_Schier_Lab_H3K4me3_0002AS.DCD002752SQ.danRer11.USERdanio-user.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006562BS/ChIP-seq_Zon_Lab_H3K4me3_0002AS.DCD001005SQ.danRer11.USERsyang.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H3K27ac_0002AS.DCD002644SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H3K27ac_0002AS.DCD002715SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006562BS/ChIP-seq_Zon_Lab_H3K27Ac_0002AS.DCD001011SQ.danRer11.USERsyang.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" ; do
+    curl -fsSL -O "$BASE/$u"
+done
+
 echo ""
 echo "=== Download complete ==="
 echo "H3K4me1: $(ls *H3K4me1*.narrowPeak.gz 2>/dev/null | wc -l) files"
 echo "H3K4me3: $(ls *H3K4me3*.narrowPeak.gz 2>/dev/null | wc -l) files"
+echo "H3K27ac: $(ls *H3K27[Aa]c*.narrowPeak.gz 2>/dev/null | wc -l) files"
 echo "CTCF:    $(ls *CTCF*.narrowPeak.gz 2>/dev/null | wc -l) files"
