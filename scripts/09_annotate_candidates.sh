@@ -27,15 +27,21 @@ echo ""
 
 cd results
 
+# Tier parameters (defaults preserve strict pipeline):
+#   HARBOR_PREFIX  — input candidate prefix (e.g. safe_harbors_relaxed)
+#   FEATURE_TABLE  — output table name
+HP="${HARBOR_PREFIX:-safe_harbors}"
+FEATURE_TABLE="${FEATURE_TABLE:-candidate_feature_table.tsv}"
+
 # ======================================================================
 # Input: use biologically filtered candidates from Phase 3
 # Fall back to sized candidates from script 08 if Phase 3 hasn't run
 # ======================================================================
-if [ -s "safe_harbors_biological_100pct_sized.bed" ]; then
-    INPUT="safe_harbors_biological_100pct_sized.bed"
+if [ -s "${HP}_biological_100pct_sized.bed" ]; then
+    INPUT="${HP}_biological_100pct_sized.bed"
     echo "Using Phase 3 filtered candidates: $INPUT"
-elif [ -s "safe_harbors_100pct_sized.bed" ]; then
-    INPUT="safe_harbors_100pct_sized.bed"
+elif [ -s "${HP}_100pct_sized.bed" ]; then
+    INPUT="${HP}_100pct_sized.bed"
     echo "WARNING: Phase 3 output not found. Using basic filtered candidates: $INPUT"
 else
     echo "ERROR: No candidate files found. Run scripts 08 (and 08b) first."
@@ -219,7 +225,7 @@ echo ""
 
 # Header
 echo -e "chrom\tstart\tend\tsize\tstage_count\tnearest_gene\tgene_distance\tgc_pct\trepeat_frac\tconservation_frac\ttad_distance\tsgrna_score\tcomposite_rank" \
-    > candidate_feature_table.tsv
+    > ${FEATURE_TABLE}
 
 # Join all annotations
 paste \
@@ -249,11 +255,11 @@ paste \
     print $0, composite
 }' \
 | sort -t$'\t' -k13,13 -nr \
->> candidate_feature_table.tsv
+>> ${FEATURE_TABLE}
 
-TOTAL_ANNOTATED=$(tail -n +2 candidate_feature_table.tsv | wc -l)
+TOTAL_ANNOTATED=$(tail -n +2 ${FEATURE_TABLE} | wc -l)
 echo "Feature table complete: $TOTAL_ANNOTATED candidates annotated"
-echo "Output: results/candidate_feature_table.tsv"
+echo "Output: results/${FEATURE_TABLE}"
 echo ""
 
 # ======================================================================
@@ -261,7 +267,7 @@ echo ""
 # ======================================================================
 echo "=== Top 20 Candidates (by composite rank) ==="
 echo ""
-head -21 candidate_feature_table.tsv | column -t
+head -21 ${FEATURE_TABLE} | column -t
 echo ""
 
 # ======================================================================
@@ -269,7 +275,7 @@ echo ""
 # ======================================================================
 echo "=== Annotation Summary ==="
 echo "  Total candidates annotated: $TOTAL_ANNOTATED"
-echo "  Feature table: candidate_feature_table.tsv"
+echo "  Feature table: ${FEATURE_TABLE}"
 if [ -f "$SGRNA_BED" ] && [ -s "$SGRNA_BED" ]; then
     echo "  sgRNA-targetable candidates: $(wc -l < candidates_with_sgrna.bed)"
 fi

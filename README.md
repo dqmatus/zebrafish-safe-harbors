@@ -27,7 +27,13 @@ using DANIO-CODE ATAC-seq data.
 11_design_sgrnas.py         → Enumerate on-target SpCas9 (NGG) guides for top
                               candidates (specificity/efficiency scored in CRISPOR;
                               picks in results/sgrna_shortlist.tsv)
+12_relaxed_tier.sh          → Alternate candidate list at a relaxed gene-distance
+                              buffer (2kb); reuses 08→08b→09 via env vars
 ```
+
+Scripts 08/08b/09 are parameterized by env vars (`MASTER_EXCL`, `HARBOR_PREFIX`,
+`FEATURE_TABLE`) with defaults that preserve the strict pipeline; `12_relaxed_tier.sh`
+sets them to emit the relaxed tier without touching strict outputs.
 
 ## Methodology
 
@@ -75,7 +81,19 @@ When data is provided (see DATA_NEEDED.md), additional filters are applied:
 | Consensus peaks (90%) | 99,715 |
 | Consensus peaks (80%) | 139,793 |
 | Gene-distal + size-filtered (100%) | 4,771 |
-| **Final safe harbors after Phase 3 (100%)** | **2,316** |
+| **Final safe harbors after Phase 3 (100%)** | **2,316** (strict) / **2,937** (relaxed) |
+
+### Candidate tiers (gene-distance)
+Two candidate lists are produced, differing only in the gene flanking buffer
+(inertness/ChIP screen is identical):
+- **Strict** — `GENE_BUFFER_KB=10` → 2,316 candidates → `candidate_feature_table.tsv`
+- **Relaxed** — `RELAXED_GENE_BUFFER_KB=2` → 2,937 (+621) → `candidate_feature_table_relaxed.tsv`
+  (build with `scripts/12_relaxed_tier.sh`)
+
+The relaxed tier surfaces gene-proximal-but-inert sites (in the spirit of the
+tpl102 benchmark, which works experimentally despite being ~341bp from a gene).
+chr12/nrxn1a is #1 in both tiers. Note: tpl102 itself still doesn't surface even
+at 2kb — it also overlaps a repeat (see Validation Benchmark).
 
 Phase 3 regulatory screen (discard-whole) removes 4,771 → 2,316 at the 100% tier:
 ChIP active marks −2,360, validated enhancers −3, promoters −25, novel lncRNA −11,

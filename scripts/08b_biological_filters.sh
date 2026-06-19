@@ -42,6 +42,9 @@ done
 
 cd results
 
+# Tier prefix (default preserves strict pipeline; e.g. ${HP}_relaxed)
+HP="${HARBOR_PREFIX:-safe_harbors}"
+
 # ======================================================================
 # Utility function: check if a BED file exists and is non-empty
 # ======================================================================
@@ -107,9 +110,9 @@ subtract_track() {
 # ======================================================================
 # Input: use the sized candidates from script 08
 # ======================================================================
-INPUT_100="safe_harbors_100pct_sized.bed"
-INPUT_90="safe_harbors_90pct_sized.bed"
-INPUT_80="safe_harbors_80pct_sized.bed"
+INPUT_100="${HP}_100pct_sized.bed"
+INPUT_90="${HP}_90pct_sized.bed"
+INPUT_80="${HP}_80pct_sized.bed"
 
 # We'll work primarily with the 100% tier, then apply same filters to others
 if [ ! -s "$INPUT_100" ]; then
@@ -504,28 +507,28 @@ echo ""
 echo "--- Final Filtered Output ---"
 echo ""
 
-cp "$CURRENT_100" safe_harbors_biological_100pct.bed
-cp "$CURRENT_90" safe_harbors_biological_90pct.bed
-cp "$CURRENT_80" safe_harbors_biological_80pct.bed
+cp "$CURRENT_100" ${HP}_biological_100pct.bed
+cp "$CURRENT_90" ${HP}_biological_90pct.bed
+cp "$CURRENT_80" ${HP}_biological_80pct.bed
 
 echo "Final candidates after biological filtering:"
-echo "  100% consensus: $(wc -l < safe_harbors_biological_100pct.bed)"
-echo "  90% consensus: $(wc -l < safe_harbors_biological_90pct.bed)"
-echo "  80% consensus: $(wc -l < safe_harbors_biological_80pct.bed)"
+echo "  100% consensus: $(wc -l < ${HP}_biological_100pct.bed)"
+echo "  90% consensus: $(wc -l < ${HP}_biological_90pct.bed)"
+echo "  80% consensus: $(wc -l < ${HP}_biological_80pct.bed)"
 echo ""
 
 # Re-apply minimum size filter (subtraction can create fragments)
-awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' safe_harbors_biological_100pct.bed \
-    > safe_harbors_biological_100pct_sized.bed
-awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' safe_harbors_biological_90pct.bed \
-    > safe_harbors_biological_90pct_sized.bed
-awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' safe_harbors_biological_80pct.bed \
-    > safe_harbors_biological_80pct_sized.bed
+awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' ${HP}_biological_100pct.bed \
+    > ${HP}_biological_100pct_sized.bed
+awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' ${HP}_biological_90pct.bed \
+    > ${HP}_biological_90pct_sized.bed
+awk -v min="$MIN_HARBOR_SIZE" '($3 - $2) >= min' ${HP}_biological_80pct.bed \
+    > ${HP}_biological_80pct_sized.bed
 
 echo "After re-applying minimum size filter (>=${MIN_HARBOR_SIZE}bp):"
-echo "  100% consensus: $(wc -l < safe_harbors_biological_100pct_sized.bed)"
-echo "  90% consensus: $(wc -l < safe_harbors_biological_90pct_sized.bed)"
-echo "  80% consensus: $(wc -l < safe_harbors_biological_80pct_sized.bed)"
+echo "  100% consensus: $(wc -l < ${HP}_biological_100pct_sized.bed)"
+echo "  90% consensus: $(wc -l < ${HP}_biological_90pct_sized.bed)"
+echo "  80% consensus: $(wc -l < ${HP}_biological_80pct_sized.bed)"
 echo ""
 
 # Clean up intermediate files
