@@ -94,6 +94,38 @@ for u in \
     curl -fsSL -O "$BASE/$u"
 done
 
+# --- Other ChIP targets (H3K36me3, H2A.Z/H2AFV, H3K14ac, Pol II, dev TFs) -----
+# Embryonic only; 06c merges these into other_chip_peaks.bed (08b Step 1d).
+echo "Other active/TF marks (H3K36me3/H2A.Z/H3K14ac/PolII/TFs)..."
+for u in \
+  "DCD007132BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002652SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep3.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007132BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002656SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007132BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002669SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007129BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002641SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007129BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002711SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007128BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002697SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep3.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007128BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002704SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007128BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002712SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007127BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002710SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007127BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002699SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep3.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007127BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002680SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002676SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002721SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007123BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002684SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007123BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002700SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep3.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007123BS/ChIP-seq_Cairns_Lab_H2AFV_0002AS.DCD002657SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H3K14ac_0002AS.DCD002658SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H3K14ac_0002AS.DCD002683SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep2.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007124BS/ChIP-seq_Cairns_Lab_H3K14ac_0002AS.DCD002702SQ.danRer11.USERdanio-user.R1.merged.nodup_x_ctl_for_rep3.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007025BS/ChIP-seq_Bartel_Lab_H3K36me3_0001AS.DCD002372SQ.danRer11.USERmickael.dong.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD007026BS/ChIP-seq_Bartel_Lab_H3K36me3_0001AS.DCD002381SQ.danRer11.USERmickael.dong.R1.merged.nodup_x_ctl_for_rep1.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006633BS/ChIP-seq_Schier_Lab_H3K36me3_0002AS.DCD002754SQ.danRer11.USERdanio-user.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006633BS/ChIP-seq_Schier_Lab_Pol_II_4H8_0001AS.DCD002757SQ.danRer11.USERdanio-user.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  "DCD006633BS/ChIP-seq_Schier_Lab_Pol_II_8WG16_0001AS.DCD002751SQ.danRer11.USERdanio-user.R1.merged.nodup.pval1e-07.500K.narrowPeak.gz" \
+  ; do
+    curl -fsSL -O "$BASE/$u"
+done
+
 echo ""
 echo "=== Download complete ==="
 echo "H3K4me1: $(ls *H3K4me1*.narrowPeak.gz 2>/dev/null | wc -l) files"

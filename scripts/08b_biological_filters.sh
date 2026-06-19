@@ -28,7 +28,7 @@ echo ""
 # (Previously these stayed root-relative and every Phase 3 filter silently
 # SKIPped because e.g. annotation/chip/... resolved under results/.)
 REPO_ROOT="$(pwd)"
-for _v in CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED CHIP_H3K27ME3_BED \
+for _v in CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED CHIP_H3K27ME3_BED CHIP_OTHER_BED \
           CONSERVATION_BED CNE_BED MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED \
           MIRNA_NCRNA_BED CANCER_ASSOCIATED_GENES_BED DOSAGE_SENSITIVE_GENES_BED \
           UCE_BED TAD_BOUNDARIES_BED COPE_BED DOPE_BED \
@@ -235,6 +235,23 @@ if check_data "$CHIP_H3K27ME3_BED" "H3K27me3 (Polycomb-silenced)"; then
     CURRENT_100="filtered_100_k27me3.bed"; CURRENT_90="filtered_90_k27me3.bed"; CURRENT_80="filtered_80_k27me3.bed"
 else
     echo "  No H3K27me3 track available. Skipping."
+fi
+echo ""
+
+# ======================================================================
+# Step 1d: Other active/transcribed/TF-bound ChIP exclusion
+#   Combined union of H3K36me3 (transcribed bodies), H2A.Z/H2AFV, H3K14ac,
+#   Pol II, and developmental TFs (Zic3/nanog-like/Pou5f3/Cdx4/Sall4/Mxtx2).
+# ======================================================================
+echo "--- Step 1d: Other active/TF ChIP Exclusion ---"
+echo ""
+if check_data "$CHIP_OTHER_BED" "Other active/TF ChIP (H3K36me3/H2A.Z/PolII/TFs)"; then
+    subtract_track "$CURRENT_100" "$CHIP_OTHER_BED" "filtered_100_other.bed" "Other ChIP"
+    subtract_track "$CURRENT_90"  "$CHIP_OTHER_BED" "filtered_90_other.bed"  "Other ChIP"
+    subtract_track "$CURRENT_80"  "$CHIP_OTHER_BED" "filtered_80_other.bed"  "Other ChIP"
+    CURRENT_100="filtered_100_other.bed"; CURRENT_90="filtered_90_other.bed"; CURRENT_80="filtered_80_other.bed"
+else
+    echo "  No other-ChIP track available. Skipping."
 fi
 echo ""
 

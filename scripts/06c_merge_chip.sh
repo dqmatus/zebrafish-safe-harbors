@@ -94,4 +94,41 @@ for entry in "${MARKS[@]}"; do
     echo ""
 done
 
+# ----------------------------------------------------------------------
+# Catch-all: the OTHER active/transcribed ChIP targets — H3K36me3 (transcribed
+# bodies), H2A.Z/H2AFV, H3K14ac, Pol II — merged into one union. They get
+# identical discard-whole treatment in 08b, so a single combined track is simplest.
+# Excludes (case-insensitively):
+#   - the 5 named marks built above (H3K27ac/H3K4me1/H3K4me3/H3K27me3/CTCF)
+#   - developmental pioneer TFs (Pou5f3/nanog/Zic3/Sall4/Cdx4/Mxtx2): these bind
+#     the early-embryo genome promiscuously (Pou5f3 ~3.8% of the genome) and are
+#     NOT discrete regulatory elements, so they are unsuitable as an exclusion mask.
+# ----------------------------------------------------------------------
+shopt -s nocasematch
+other=()
+seen=" "
+for f in ChIP-seq_*.narrowPeak.gz ChIP-seq_*.narrowPeak; do
+    [ -e "$f" ] || continue
+    case "$f" in
+        *h3k27ac*|*h3k4me1*|*h3k4me3*|*h3k27me3*|*ctcf*) continue ;;
+        *pou5f3*|*nanog*|*zic3*|*sall4*|*cdx4*|*mxtx2*) continue ;;
+    esac
+    acc=$(echo "$f" | grep -oE 'DCD[0-9]+SQ' || true); [ -n "$acc" ] || acc="$f"
+    case "$seen" in *" $acc "*) continue ;; esac
+    seen="$seen$acc "
+    other+=("$f")
+done
+shopt -u nocasematch
+if [ ${#other[@]} -gt 0 ]; then
+    echo "[OK] other targets: merging ${#other[@]} sample(s) -> other_chip_peaks.bed"
+    for f in "${other[@]}"; do read_peaks "$f"; done \
+        | cut -f1-3 \
+        | awk 'BEGIN{OFS="\t"} { if ($1 !~ /^chr/) $1 = "chr" $1; print }' \
+        | sort -k1,1 -k2,2n \
+        | bedtools merge \
+        > other_chip_peaks.bed
+    echo "     $(wc -l < other_chip_peaks.bed) merged peaks, $(awk '{s+=$3-$2}END{print s+0}' other_chip_peaks.bed) bp"
+    echo ""
+fi
+
 echo "=== ChIP-seq merge complete ==="

@@ -21,6 +21,11 @@ match the 0-48 hpf ATAC window). Downloaded by `06d_download_chip.sh`.
   Distinct rationale: avoid landing in silenced chromatin (transgene could be silenced).
   Applied as 08b Step 1c. Low impact (−2 at 100% tier) since candidates are open chromatin.
 - **CTCF** (insulator) — ✅ Horsfield Lab, 43,679 peaks. `CHIP_CTCF_BED`
+- **Other active/transcribed** (combined, `CHIP_OTHER_BED`, 08b Step 1d) — ✅ 24 samples,
+  ~22 Mb: H3K36me3 (3, transcribed bodies), H2A.Z/H2AFV (16), H3K14ac (3), Pol II (2).
+  - Developmental pioneer TFs (Pou5f3/Nanog/Sall4/Zic3/Cdx4/Mxtx2) are available on
+    DANIO-CODE but **deliberately NOT used** — they bind promiscuously (Pou5f3 ~3.8%
+    of the genome), so they over-mask and are unsuitable as a regulatory-element filter.
   - ⚠️ CAVEAT: only "Bud" stage (~10 hpf) exists in all of DANIO-CODE; applied across all stages.
   - Note: Zon's H3K27ac file is named `H3K27Ac` (capital A); `06c` matches case-insensitively.
 
