@@ -38,6 +38,18 @@ echo "Starting consensus peaks (100%): $(wc -l < consensus_peaks_100pct.bed)"
 echo "Starting consensus peaks (90%): $(wc -l < consensus_peaks_90pct.bed)"
 echo "Starting consensus peaks (80%): $(wc -l < consensus_peaks_80pct.bed)"
 
+# Restrict to primary chromosomes (chr1-25); drop unplaced scaffolds (chrUn_*),
+# alt/random contigs, and chrM. Lacking gene annotation, these otherwise slip
+# through the gene-distal filter (gene_distance == -1 -> treated as maximally distal)
+# and can rank near the top despite being poor, hard-to-validate CRISPR targets.
+echo ""
+echo "=== Restricting to primary chromosomes (${PRIMARY_CHROM_REGEX}) ==="
+for tier in 100 90 80; do
+    awk -v re="$PRIMARY_CHROM_REGEX" '$1 ~ re' "consensus_peaks_${tier}pct.bed" \
+        > "consensus_peaks_${tier}pct.primary.bed"
+    echo "  ${tier}%: $(wc -l < consensus_peaks_${tier}pct.bed) -> $(wc -l < consensus_peaks_${tier}pct.primary.bed) on chr1-25"
+done
+
 # Filter against minimal exclusions
 echo ""
 echo "=== Filtering against gene-distal (master) exclusions ==="
@@ -45,17 +57,17 @@ echo "=== Filtering against gene-distal (master) exclusions ==="
 echo "(exons + essential genes + transposons + gene bodies ±10kb + telomeres)"
 
 bedtools subtract \
-    -a consensus_peaks_100pct.bed \
+    -a consensus_peaks_100pct.primary.bed \
     -b ../annotation/master_exclusions.bed \
     > safe_harbors_100pct_minimal.bed
 
 bedtools subtract \
-    -a consensus_peaks_90pct.bed \
+    -a consensus_peaks_90pct.primary.bed \
     -b ../annotation/master_exclusions.bed \
     > safe_harbors_90pct_minimal.bed
 
 bedtools subtract \
-    -a consensus_peaks_80pct.bed \
+    -a consensus_peaks_80pct.primary.bed \
     -b ../annotation/master_exclusions.bed \
     > safe_harbors_80pct_minimal.bed
 

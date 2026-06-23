@@ -44,6 +44,13 @@ CENTROMERE_USE=false
 # Minimum safe harbor size (bp — must fit landing pad construct)
 MIN_HARBOR_SIZE=300
 
+# Restrict candidates to primary chromosomes (chr1-25). Unplaced scaffolds
+# (chrUn_*, *_alt, *_random) and chrM make poor landing pads (unreliable
+# assembly/coordinates, hard to validate) and — lacking gene annotation — would
+# otherwise pass the gene-distal filter and even rank highly, since bedtools
+# closest reports gene_distance = -1 there, which 09 treats as maximally distal.
+PRIMARY_CHROM_REGEX='^chr([1-9]|1[0-9]|2[0-5])$'
+
 # ======================================================================
 # Phase 3: GSH-style Distance Criteria (Papapetrou/Sadelain)
 # ======================================================================
@@ -156,7 +163,7 @@ export SUMMIT_WINDOW_HALF
 export CONSENSUS_MIN_PCT_80 CONSENSUS_MIN_PCT_90 CONSENSUS_MIN_PCT_100
 export SCORE_NORMALIZATION_METHOD
 export GENE_BUFFER_KB ESSENTIAL_GENE_BUFFER_KB TELOMERE_END_DISTANCE
-export CENTROMERE_USE MIN_HARBOR_SIZE
+export CENTROMERE_USE MIN_HARBOR_SIZE PRIMARY_CHROM_REGEX
 export GSH_GENE_BUFFER_KB GSH_CANCER_GENE_BUFFER_KB GSH_DOSAGE_SENSITIVE_BUFFER_KB
 export GSH_MIRNA_BUFFER_KB GSH_UCE_BUFFER_KB
 export CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED
