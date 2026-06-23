@@ -32,12 +32,18 @@ using DANIO-CODE ATAC-seq data.
 ## Methodology
 
 ### Consensus Peak Calling (Phase 2)
-1. Extract peak summits (narrowPeak col-10) with quantile-normalized scores
+1. Extract peak signal with quantile-normalized scores
 2. Collapse replicates to biosample level (median score)
 3. Collapse biosamples to developmental stage level (median score)
 4. Create fixed windows (±150bp) around stage-level summits
 5. Merge windows and count how many stages have a summit in each region
 6. Filter by consensus tiers (80%, 90%, 100% of stages)
+
+> **Note on scores & summits:** per-sample accessibility scores are quantile-normalized
+> and median-collapsed, but the consensus tiers and the composite ranking currently use
+> only summit **presence/absence** per stage — constitutive *strength* is not yet used to
+> select or rank candidates. The ±150 bp window is centered on the merged-region midpoint
+> (the per-sample narrowPeak col-10 summit is not preserved after stage merging).
 
 ### Exclusion Criteria
 - Gene bodies ±10kb (all Ensembl genes) — enforced via master_exclusions.bed
@@ -45,6 +51,7 @@ using DANIO-CODE ATAC-seq data.
 - Essential genes ±20kb
 - Transposable elements (DNA, LINE, SINE, LTR, Retroposon, RC classes)
 - Telomere regions (500kb from chromosome ends)
+- Non-primary chromosomes (primary chr1–25 only; drops unplaced scaffolds `chrUn_*`, alt/random, chrM)
 - Minimum region size: 300bp
 
 ### Composite Ranking
