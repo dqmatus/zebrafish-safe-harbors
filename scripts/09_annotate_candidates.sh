@@ -218,13 +218,39 @@ echo "  Stage counts extracted from candidate file."
 echo ""
 
 # ======================================================================
+# Step 7b: COPE/DOPE overlap flags (DANIO-CODE positive "open but inert" signal)
+# A candidate overlapping a COPE is gene-distal AND independently validated by
+# DANIO-CODE as constitutively open but lacking chromatin marks — a high-
+# confidence positive. (Annotation only; not used in the composite rank.)
+# ======================================================================
+echo "--- Step 7b: COPE/DOPE overlap flags ---"
+
+# config paths are repo-root-relative; we run from results/, so prefix ../
+_cope="$COPE_BED"; case "$_cope" in /*) : ;; *) _cope="../$_cope" ;; esac
+_dope="$DOPE_BED"; case "$_dope" in /*) : ;; *) _dope="../$_dope" ;; esac
+
+flag_overlap() {  # $1=track  $2=output (chr,start,end,0/1 in candidate order)
+    if [ -f "$1" ] && [ -s "$1" ]; then
+        bedtools intersect -a candidates_sorted.bed \
+            -b <(awk 'BEGIN{OFS="\t"} { if ($1 !~ /^chr/) $1 = "chr" $1; print }' "$1" | cut -f1-3 | sort -k1,1 -k2,2n) -c \
+        | awk 'BEGIN{OFS="\t"} {print $1, $2, $3, ($NF>0)?1:0}' > "$2"
+    else
+        awk 'BEGIN{OFS="\t"} {print $1, $2, $3, "NA"}' candidates_sorted.bed > "$2"
+    fi
+}
+flag_overlap "$_cope" cope_flag.txt
+flag_overlap "$_dope" dope_flag.txt
+echo "  COPE-overlapping: $(awk '$4==1' cope_flag.txt | wc -l | tr -d ' ') / $NUM_CANDIDATES; DOPE-overlapping: $(awk '$4==1' dope_flag.txt | wc -l | tr -d ' ')"
+echo ""
+
+# ======================================================================
 # Step 8: Build composite feature table
 # ======================================================================
 echo "--- Step 8: Building composite feature table ---"
 echo ""
 
 # Header
-echo -e "chrom\tstart\tend\tsize\tstage_count\tnearest_gene\tgene_distance\tgc_pct\trepeat_frac\tconservation_frac\ttad_distance\tsgrna_score\tcomposite_rank" \
+echo -e "chrom\tstart\tend\tsize\tstage_count\tnearest_gene\tgene_distance\tgc_pct\trepeat_frac\tconservation_frac\ttad_distance\tsgrna_score\tin_cope\tin_dope\tcomposite_rank" \
     > ${FEATURE_TABLE}
 
 # Join all annotations
@@ -238,8 +264,11 @@ paste \
     <(cut -f4 conservation_overlap.txt) \
     <(cut -f4 tad_distance.txt) \
     <(cut -f4 sgrna_best_score.txt) \
+    <(cut -f4 cope_flag.txt) \
+    <(cut -f4 dope_flag.txt) \
 | awk 'BEGIN{OFS="\t"} {
-    # Composite rank with distance penalty
+    # Composite rank with distance penalty (in_cope/in_dope are cols 13/14,
+    # annotation only — not used in the score; composite printed as last col)
     stage = ($5 == "NA" || $5 == ".") ? 0 : $5+0
     size = ($4 == "NA" || $4 == ".") ? 0 : $4+0
     gene_dist = ($7 == "NA" || $7 == "." || $7 == "" || $7+0 < 0) ? 100000 : $7+0
@@ -254,7 +283,7 @@ paste \
     composite = (stage * 100) + (size / 100) + (sgrna * 50) - (cons * 200) - (rep * 100) + dist_bonus
     print $0, composite
 }' \
-| sort -t$'\t' -k13,13 -nr \
+| sort -t$'\t' -k15,15 -nr \
 >> ${FEATURE_TABLE}
 
 TOTAL_ANNOTATED=$(tail -n +2 ${FEATURE_TABLE} | wc -l)
@@ -285,6 +314,7 @@ echo ""
 rm -f candidates_sorted.bed genes_chr_sorted.bed nearest_gene_raw.txt
 rm -f nearest_gene_annotated.txt gc_content.txt repeat_content.txt
 rm -f conservation_overlap.txt tad_distance.txt sgrna_best_score.txt
+rm -f cope_flag.txt dope_flag.txt
 rm -f stage_counts.txt candidates_with_sgrna.bed
 
 echo "=== Annotation complete ==="
