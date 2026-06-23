@@ -30,7 +30,7 @@ echo ""
 REPO_ROOT="$(pwd)"
 for _v in CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED CHIP_H3K27ME3_BED CHIP_OTHER_BED \
           CONSERVATION_BED CNE_BED MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED \
-          MIRNA_NCRNA_BED CANCER_ASSOCIATED_GENES_BED DOSAGE_SENSITIVE_GENES_BED \
+          MIRNA_NCRNA_BED LNCRNA_BED CANCER_ASSOCIATED_GENES_BED DOSAGE_SENSITIVE_GENES_BED \
           UCE_BED TAD_BOUNDARIES_BED COPE_BED DOPE_BED \
           VALIDATED_ENHANCERS_BED PROMOTERS_BED NOVEL_LNCRNA_BED; do
     eval "_p=\${$_v:-}"
@@ -372,6 +372,29 @@ if check_data "$MIRNA_NCRNA_BED" "miRNA/ncRNA coordinates"; then
     GSH_APPLIED=true
 fi
 
+# 4a2: lncRNA buffer (eLife GSH paper criterion; zebrafish-scaled distance)
+if check_data "$LNCRNA_BED" "lncRNA coordinates"; then
+    echo ""
+    echo "  Applying ${GSH_LNCRNA_BUFFER_KB}kb buffer around lncRNAs..."
+    bedtools slop \
+        -i "$LNCRNA_BED" \
+        -g ../reference/GRCz11.chrom.sizes \
+        -b $((GSH_LNCRNA_BUFFER_KB * 1000)) \
+    | awk 'BEGIN{OFS="\t"} { if ($1 !~ /^chr/) $1 = "chr" $1; print }' \
+    | cut -f1-3 \
+    | sort -k1,1 -k2,2n \
+    | bedtools merge \
+    > lncrna_buffered.bed
+
+    subtract_track "$CURRENT_100" "lncrna_buffered.bed" "filtered_100_lncbuf.bed" "lncRNA ±${GSH_LNCRNA_BUFFER_KB}kb"
+    subtract_track "$CURRENT_90" "lncrna_buffered.bed" "filtered_90_lncbuf.bed" "lncRNA ±${GSH_LNCRNA_BUFFER_KB}kb"
+    subtract_track "$CURRENT_80" "lncrna_buffered.bed" "filtered_80_lncbuf.bed" "lncRNA ±${GSH_LNCRNA_BUFFER_KB}kb"
+    CURRENT_100="filtered_100_lncbuf.bed"
+    CURRENT_90="filtered_90_lncbuf.bed"
+    CURRENT_80="filtered_80_lncbuf.bed"
+    GSH_APPLIED=true
+fi
+
 # 4b: Cancer-associated genes buffer
 if check_data "$CANCER_ASSOCIATED_GENES_BED" "Cancer-associated genes"; then
     echo ""
@@ -533,7 +556,7 @@ echo ""
 
 # Clean up intermediate files
 rm -f filtered_*.bed regulatory_elements_combined.bed
-rm -f mirna_ncrna_buffered.bed cancer_genes_buffered.bed
+rm -f mirna_ncrna_buffered.bed lncrna_buffered.bed cancer_genes_buffered.bed
 rm -f dosage_sensitive_buffered.bed uce_buffered.bed
 
 echo "=== Phase 3: Biological filtering complete ==="
