@@ -14,6 +14,7 @@ cd annotation
 [ -f ../config.sh ] && source ../config.sh
 GENE_BUFFER_KB=${GENE_BUFFER_KB:-10}
 RELAXED_GENE_BUFFER_KB=${RELAXED_GENE_BUFFER_KB:-2}
+INTRONIC_EXON_BUFFER_KB=${INTRONIC_EXON_BUFFER_KB:-2}
 
 # Add flanking to essential genes
 bedtools slop \
@@ -60,6 +61,26 @@ build_master "$GENE_BUFFER_KB" master_exclusions.bed
 # Relaxed (default 2kb) — alternate, more-permissive candidate list
 build_master "$RELAXED_GENE_BUFFER_KB" master_exclusions_relaxed.bed
 
+# Intron-permissive: exclude EXONS (±INTRONIC_EXON_BUFFER_KB) instead of whole
+# gene bodies, so deep-intronic / exon-distal sites of non-essential genes are
+# allowed. Essential genes (±20kb, whole), repeats, and telomeres still excluded.
+build_master_intronic() {
+    local buf_kb="$1" out="$2"
+    bedtools slop -i exons.bed -g ../reference/GRCz11.chrom.sizes -b "$((buf_kb * 1000))" \
+        > exons_plus_${buf_kb}kb.bed
+    cat \
+        exons_plus_${buf_kb}kb.bed \
+        repeats_transposons.bed \
+        essential_genes_plus_20kb.bed \
+        telomere_regions.bed \
+    | cut -f1-3 \
+    | awk 'BEGIN{OFS="\t"} { if ($1 !~ /^chr/) $1 = "chr" $1; print }' \
+    | sort -k1,1 -k2,2n \
+    | bedtools merge \
+    > "$out"
+}
+build_master_intronic "$INTRONIC_EXON_BUFFER_KB" master_exclusions_intronic.bed
+
 # Statistics
 echo ""
 echo "=== Exclusion Statistics ==="
@@ -68,5 +89,6 @@ echo ""
 echo "Minimal exclusions: $(awk '{sum+=$3-$2}END{print sum}' exclusions_minimal.bed) bp"
 echo "Master exclusions (strict, ${GENE_BUFFER_KB}kb): $(awk '{sum+=$3-$2}END{print sum}' master_exclusions.bed) bp"
 echo "Master exclusions (relaxed, ${RELAXED_GENE_BUFFER_KB}kb): $(awk '{sum+=$3-$2}END{print sum}' master_exclusions_relaxed.bed) bp"
+echo "Master exclusions (intron-permissive, exons±${INTRONIC_EXON_BUFFER_KB}kb): $(awk '{sum+=$3-$2}END{print sum}' master_exclusions_intronic.bed) bp"
 
 echo "=== Exclusion combination complete ==="

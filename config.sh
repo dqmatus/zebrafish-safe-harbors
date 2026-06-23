@@ -33,6 +33,14 @@ SCORE_NORMALIZATION_METHOD="quantile"
 GENE_BUFFER_KB=10
 # Relaxed gene buffer for the alternate (more-permissive) candidate tier
 RELAXED_GENE_BUFFER_KB=2
+# Intron-permissive tier: instead of excluding whole gene bodies, exclude only
+# EXONS ±INTRONIC_EXON_BUFFER_KB (plus essential genes, repeats, telomeres). This
+# opens deep-intronic and exon-distal space (the class pIGLET targets), screened
+# by the same Phase 3 regulatory/mappability filters. The buffer protects splice
+# sites and exon-proximal regulatory elements; 2kb is a conservative default.
+# NOTE: pIGLET24b itself sits only ~92bp from a skilb exon, so it is NOT recovered
+# at any safe buffer — it is exon-proximal, not the deep-intronic site the rule targets.
+INTRONIC_EXON_BUFFER_KB=2
 
 # Essential gene buffer (bp)
 ESSENTIAL_GENE_BUFFER_KB=20
@@ -184,7 +192,7 @@ LOGFILE="${PWD}/pipeline.log"
 export SUMMIT_WINDOW_HALF
 export CONSENSUS_MIN_PCT_80 CONSENSUS_MIN_PCT_90 CONSENSUS_MIN_PCT_100
 export SCORE_NORMALIZATION_METHOD
-export GENE_BUFFER_KB RELAXED_GENE_BUFFER_KB ESSENTIAL_GENE_BUFFER_KB TELOMERE_END_DISTANCE
+export GENE_BUFFER_KB RELAXED_GENE_BUFFER_KB INTRONIC_EXON_BUFFER_KB ESSENTIAL_GENE_BUFFER_KB TELOMERE_END_DISTANCE
 export CENTROMERE_USE MIN_HARBOR_SIZE PRIMARY_CHROM_REGEX
 export GSH_GENE_BUFFER_KB GSH_CANCER_GENE_BUFFER_KB GSH_DOSAGE_SENSITIVE_BUFFER_KB
 export GSH_MIRNA_BUFFER_KB GSH_LNCRNA_BUFFER_KB GSH_UCE_BUFFER_KB
