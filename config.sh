@@ -100,8 +100,11 @@ CHIP_H3K27ME3_BED="annotation/chip/H3K27me3_peaks.bed"
 # Pol II, and TFs) — active/transcribed/TF-bound chromatin, built by 06c.
 CHIP_OTHER_BED="annotation/chip/other_chip_peaks.bed"
 
-# Conservation tracks
-CONSERVATION_BED="annotation/conservation/phastCons_conserved.bed"
+# Conservation tracks (built by scripts/04d_extract_conservation_tracks.sh).
+# danRer11 has no UCSC phastCons track, so CONSERVATION_BED uses Ensembl Compara
+# 65-fish GERP constrained elements (GRCz11); CNE_BED uses Ancora zebrafish-vs-
+# human HCNEs lifted danRer10->danRer11 (conserved non-coding elements).
+CONSERVATION_BED="annotation/conservation/gerp_constrained_elements.bed"
 CNE_BED="annotation/conservation/CNEs.bed"
 
 # Hi-C TAD boundaries (flagging only, not exclusion)
