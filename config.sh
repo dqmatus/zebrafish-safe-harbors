@@ -118,6 +118,12 @@ BLACKLIST_BED="annotation/mappability/GRCz11_blacklist.bed"
 
 # Mappability threshold (regions below this are excluded)
 MAPPABILITY_THRESHOLD=0.8
+# genmap K-mer length and allowed errors for the uniqueness scan (scripts/13).
+# K=50 / E=0 = "is this 50-mer unique in the genome?" (Illumina-read-length,
+# perfect-match). With E=0, mappability is 1 for unique k-mers and <0.8 for any
+# k-mer occurring >=2x, so MAPPABILITY_THRESHOLD=0.8 excludes all non-unique runs.
+GSH_MAPPABILITY_K=50
+GSH_MAPPABILITY_E=0
 
 # ======================================================================
 # Phase 3: GSH Gene Lists
@@ -186,7 +192,7 @@ export CHIP_H3K27AC_BED CHIP_H3K4ME1_BED CHIP_H3K4ME3_BED CHIP_CTCF_BED CHIP_H3K
 export CONSERVATION_BED CNE_BED TAD_BOUNDARIES_BED
 export COPE_BED DOPE_BED
 export VALIDATED_ENHANCERS_BED PROMOTERS_BED NOVEL_LNCRNA_BED
-export MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED MAPPABILITY_THRESHOLD
+export MAPPABILITY_BED SEGDUP_BED BLACKLIST_BED MAPPABILITY_THRESHOLD GSH_MAPPABILITY_K GSH_MAPPABILITY_E
 export GENE_BED_COMPREHENSIVE MIRNA_NCRNA_BED LNCRNA_BED
 export DOSAGE_SENSITIVE_GENES_BED CANCER_ASSOCIATED_GENES_BED UCE_BED
 export SGRNA_BED SGRNA_MIN_SPECIFICITY SGRNA_TOOL
