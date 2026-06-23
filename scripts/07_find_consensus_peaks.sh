@@ -4,7 +4,7 @@
 # and replicate collapsing
 #
 # PHASE 2 REDESIGN (COMPLETE):
-# 1. Extract peak summits (narrowPeak col-10) with normalized scores
+# 1. Extract peak signal with normalized scores (col-10 summit not retained downstream)
 # 2. Collapse replicates to biosample level (median score)
 # 3. Collapse biosamples to stage level (median score)
 # 4. Create fixed windows (±SUMMIT_WINDOW_HALF) around each summit
