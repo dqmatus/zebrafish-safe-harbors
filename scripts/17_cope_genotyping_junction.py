@@ -34,11 +34,11 @@ def faidx(ens, a, b):  # 0-based half-open [a,b)
 def gc(s): return (s.count("G") + s.count("C")) / len(s)
 def tm(s): return mt.Tm_NN(s)
 
-LENGTHS = (20, 21, 22, 23, 24, 25, 26)   # allow extra length for AT-rich flanks
-                                         # (window stays narrow, so amplicon stays modest)
+LENGTHS = tuple(range(20, 33))   # up to 32nt — lengthen to raise Tm (esp. AT-rich flanks)
+
 def good(p):
-    return (20 <= len(p) <= 26 and 0.40 <= gc(p) <= 0.60
-            and p[-1] in "GC" and not any(b*5 in p for b in "ACGT"))
+    return (20 <= len(p) <= 32 and 0.38 <= gc(p) <= 0.62
+            and p[-1] in "GC" and not any(b*6 in p for b in "ACGT"))
 
 def pick(cands, target):
     """cands: list of (primer, anchor_pos); valid one with Tm_NN closest to target.
@@ -49,16 +49,17 @@ def pick(cands, target):
     _, t, p, pos = min(v)
     return (t, p, pos)
 
-def design_pair(ens, cut0, target=57.0):
-    lo, hi = cut0-300, cut0+680
+def design_pair(ens, cut0, target=62.0):   # higher Tm_NN to match the lab's hot primers
+    lo, hi = cut0-300, cut0+980
     win = faidx(ens, lo, hi); base = lo
     # forward: F start ~140-280bp upstream; 3' end upstream of cut
     fwd = [(win[s-base:s-base+L], s)
            for s in range(cut0-280, cut0-130)
            for L in LENGTHS if s+L <= cut0-5]
-    # reverse: R 5' end ~380-620bp downstream (keeps WT amplicon ~550-850bp)
+    # reverse: R 5' end 380bp..900bp downstream (extend out to find a GC-rich,
+    # Tm-matched site when the near flank is AT-rich; amplicon grows accordingly)
     rev = [(rc(win[e-L-base:e-base]), e)
-           for e in range(cut0+380, cut0+620)
+           for e in range(cut0+380, cut0+900)
            for L in LENGTHS if e-L >= cut0+5 and e <= hi]
     F = pick(fwd, target)
     R = pick(rev, F[0]) if F else None   # match R to F's actual Tm
