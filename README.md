@@ -4,6 +4,9 @@ Identifies constitutively accessible, intergenic, gene-distal chromatin regions
 in zebrafish (GRCz11) as candidate single-copy integration / landing-pad sites,
 using DANIO-CODE ATAC-seq data.
 
+📊 **[Pipeline schematic & flowchart → docs/PIPELINE.md](docs/PIPELINE.md)**
+(figure: [`results/pipeline_schematic.png`](results/pipeline_schematic.png))
+
 ## Pipeline Overview
 
 ```
