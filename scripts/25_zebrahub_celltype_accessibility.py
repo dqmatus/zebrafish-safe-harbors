@@ -10,11 +10,15 @@ axis, so a landing pad can be shown constitutive in both time and cell type
 (especially at the 24 hpf scoring window).
 
 INPUT — one of:
-  A) --h5ad FILE     snATAC AnnData (cells x peaks). Auto-detects the peak
-                     coordinates (var) and a cell-type obs column; optionally
-                     subset to one timepoint. A peak is "accessible" in a cell
-                     type if detected (count>0) in >= --access-threshold of that
-                     type's cells.
+  A) --h5ad FILE     Zebrahub master pseudobulk object
+                     `peaks_by_ct_tp_master_anno.h5ad` (peaks x conditions, where
+                     each condition = cell-type x timepoint; ~640830 x 190).
+                     Auto-detects orientation, parses peak coords (obs) and the
+                     cell-type/timepoint of each condition (var), drops low-cell
+                     conditions (var['n_cells'] < --min-cells), optionally keeps
+                     one timepoint, and calls a peak "accessible" in a cell type
+                     if its (log-norm) pseudobulk value > --access-threshold.
+                     Also handles a plain cells x peaks AnnData if given.
   B) --peaks BED --matrix CSV   a peak BED (chrom,start,end) + a cell-type x peak
                      (or peak x cell-type) accessibility matrix; binarized at
                      --access-threshold.
@@ -42,64 +46,87 @@ def parse_peak_id(s):
     return norm_chrom(m.group(1)), int(m.group(2)), int(m.group(3))
 
 # ---------------------------------------------------------------- accessibility
-def peaks_from_h5ad(path, celltype_key, timepoint_key, timepoint, thresh):
+def _coords_from_index(names, frame):
+    """peak coords from an index of 'chr:start-end' ids, else chrom/start/end columns."""
+    coords = [parse_peak_id(v) for v in names]
+    if all(c is None for c in coords):
+        cols = {c.lower(): c for c in frame.columns}
+        cc = cols.get("chrom") or cols.get("chr") or cols.get("seqnames")
+        sc = cols.get("start"); ec = cols.get("end")
+        if cc and sc and ec:
+            coords = [(norm_chrom(frame[cc][i]), int(frame[sc][i]), int(frame[ec][i])) for i in range(len(names))]
+    return coords
+
+def parse_condition(name):
+    """condition 'celltype x timepoint' -> (celltype, hpf|None). Handles ...24hpf..., ..._24_..."""
+    m = re.search(r"(\d+)\s*hpf", str(name), re.I) or re.search(r"[_|\-](10|12|14|16|19|24)([_|\-]|$)", str(name))
+    tp = m.group(1) + "hpf" if m else None
+    ct = re.sub(r"[_|\-]?\d+\s*hpf[_|\-]?", "_", str(name), flags=re.I).strip("_|- ") if tp else str(name)
+    return (ct or str(name)), tp
+
+def peaks_from_h5ad(path, celltype_key, timepoint_key, timepoint, thresh, min_cells):
     try:
         import anndata as ad
         import numpy as np
     except ImportError:
-        sys.exit("ERROR: anndata/numpy needed for --h5ad. Install (e.g. in the zmarker/"
-                 "cell-type env): pip install anndata scipy numpy  — or use --peaks/--matrix.")
+        sys.exit("ERROR: anndata/numpy needed for --h5ad. Use the zmarker env:\n"
+                 "  /opt/homebrew/Caskroom/miniconda/base/envs/zmarker/bin/python scripts/25_...py --h5ad ...\n"
+                 "or provide --peaks/--matrix instead.")
     A = ad.read_h5ad(path)
-    print(f"  loaded {A.shape[0]} cells x {A.shape[1]} peaks", file=sys.stderr)
-    # AUTODETECT cell-type column
+    print(f"  loaded AnnData {A.shape}", file=sys.stderr)
+
+    # ---- detect orientation: pseudobulk master (peaks x conditions) vs cells x peaks ----
+    obs_is_peaks = sum(parse_peak_id(v) is not None for v in A.obs_names[:20]) >= 10
+    var_is_peaks = sum(parse_peak_id(v) is not None for v in A.var_names[:20]) >= 10
+
+    if obs_is_peaks and not var_is_peaks:
+        # PSEUDOBULK MASTER: obs=peaks, var=conditions (cell-type x timepoint)
+        coords = _coords_from_index(A.obs_names, A.obs)
+        M = A.layers["log_norm"] if "log_norm" in A.layers else A.X
+        import numpy as np, scipy.sparse as sp
+        M = M.toarray() if sp.issparse(M) else np.asarray(M)      # peaks x conditions
+        ncells = A.var["n_cells"].values if "n_cells" in A.var else np.full(A.n_vars, min_cells)
+        peak_ct = {}
+        types = set()
+        for j, cond in enumerate(A.var_names):
+            if ncells[j] < min_cells: continue
+            ct, tp = parse_condition(cond)
+            if timepoint and tp and str(timepoint).rstrip("hpf") not in str(tp): continue
+            types.add(ct)
+            col = M[:, j]
+            for i in np.where(col > thresh)[0]:
+                peak_ct.setdefault(int(i), set()).add(ct)
+        rows = [(coords[i][0], coords[i][1], coords[i][2], ",".join(sorted(cts)))
+                for i, cts in peak_ct.items() if coords[i]]
+        print(f"  pseudobulk master: {A.n_obs} peaks x {A.n_vars} conditions; "
+              f"kept {len(types)} cell types (timepoint={timepoint or 'all'}, n_cells>={min_cells})", file=sys.stderr)
+        return rows, sorted(types)
+
+    # ---- else: cells x peaks AnnData (fallback) ----
+    coords = _coords_from_index(A.var_names, A.var)
     if celltype_key is None:
         for k in ("cell_type", "celltype", "cell_type_broad", "annotation", "cell_states",
-                  "cell_state", "leiden", "clusters", "seurat_clusters"):
+                  "cell_state", "leiden", "clusters"):
             if k in A.obs: celltype_key = k; break
     if celltype_key not in A.obs:
         sys.exit(f"ERROR: cell-type column not found; obs has {list(A.obs.columns)}. Use --celltype-key.")
-    # optional timepoint subset
     if timepoint:
         if timepoint_key is None:
             for k in ("timepoint", "stage", "age", "hpf", "time", "dev_stage"):
                 if k in A.obs: timepoint_key = k; break
         if timepoint_key and timepoint_key in A.obs:
             A = A[A.obs[timepoint_key].astype(str).str.contains(str(timepoint))].copy()
-            print(f"  subset to timepoint '{timepoint}': {A.shape[0]} cells", file=sys.stderr)
-        else:
-            print(f"  WARN: timepoint key not found; using all cells", file=sys.stderr)
-    # peak coordinates from var
-    coords = []
-    for v in A.var_names:
-        p = parse_peak_id(v)
-        coords.append(p)
-    if all(c is None for c in coords):  # maybe in var columns
-        cols = {c.lower(): c for c in A.var.columns}
-        cc = cols.get("chrom") or cols.get("chr") or cols.get("seqnames")
-        sc = cols.get("start"); ec = cols.get("end")
-        if cc and sc and ec:
-            coords = [(norm_chrom(A.var[cc][i]), int(A.var[sc][i]), int(A.var[ec][i])) for i in range(A.n_vars)]
-        else:
-            sys.exit("ERROR: could not parse peak coordinates from var_names or var columns.")
-    X = A.X
-    import scipy.sparse as sp
+    import numpy as np
     ct = A.obs[celltype_key].astype(str).values
-    types = sorted(set(ct))
-    # per cell type: detection fraction per peak (count>0), threshold -> accessible
-    peak_ct = {}   # peak_index -> set(celltypes)
+    types = sorted(set(ct)); peak_ct = {}
     for t in types:
-        mask = ct == t
-        n = int(mask.sum())
+        mask = ct == t; n = int(mask.sum())
         if n == 0: continue
-        sub = X[mask]
-        det = (sub > 0)
-        frac = np.asarray(det.sum(axis=0)).ravel() / n
+        frac = np.asarray((A.X[mask] > 0).sum(axis=0)).ravel() / n
         for j in np.where(frac >= thresh)[0]:
             peak_ct.setdefault(int(j), set()).add(t)
-    rows = []
-    for j, ts in peak_ct.items():
-        c = coords[j]
-        if c: rows.append((c[0], c[1], c[2], ",".join(sorted(ts))))
+    rows = [(coords[j][0], coords[j][1], coords[j][2], ",".join(sorted(cts)))
+            for j, cts in peak_ct.items() if coords[j]]
     return rows, types
 
 def peaks_from_matrix(peaks_bed, matrix_csv, thresh):
@@ -122,8 +149,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--h5ad"); ap.add_argument("--peaks"); ap.add_argument("--matrix")
     ap.add_argument("--celltype-key"); ap.add_argument("--timepoint-key")
-    ap.add_argument("--timepoint", default="24hpf", help="subset to this timepoint substring (h5ad only); '' = all")
-    ap.add_argument("--access-threshold", type=float, default=0.10)
+    ap.add_argument("--timepoint", default="24hpf", help="keep only this timepoint (e.g. 24hpf); '' = all")
+    ap.add_argument("--min-cells", type=int, default=50, help="drop conditions with fewer nuclei (pseudobulk reliability)")
+    ap.add_argument("--access-threshold", type=float, default=0.0,
+                    help="pseudobulk: log-norm value above which a peak is 'accessible' (>0=detected). cells x peaks: detection fraction.")
     ap.add_argument("--candidates", default="results/candidate_feature_table.tsv")
     ap.add_argument("--peaks-out", default="annotation/zebrahub/snatac_peaks_by_celltype.bed")
     ap.add_argument("--out", default="results/candidate_feature_table_zebrahub.tsv")
@@ -131,7 +160,7 @@ def main():
 
     tp = a.timepoint or None
     if a.h5ad:
-        rows, types = peaks_from_h5ad(a.h5ad, a.celltype_key, a.timepoint_key, tp, a.access_threshold)
+        rows, types = peaks_from_h5ad(a.h5ad, a.celltype_key, a.timepoint_key, tp, a.access_threshold, a.min_cells)
     elif a.peaks and a.matrix:
         rows, types = peaks_from_matrix(a.peaks, a.matrix, a.access_threshold)
     else:
