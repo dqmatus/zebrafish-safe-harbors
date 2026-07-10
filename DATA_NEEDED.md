@@ -205,3 +205,29 @@ For pIGLET, SB founder, or DANIO-CODE data inquiries, contact the lab or check:
 - DANIO-CODE: https://www.danio-code.org
 - pIGLET publications: Original manuscripts (doi pending)
 - SB integration data: Lab records or supplementary materials
+
+---
+
+## OPTIONAL ENHANCEMENT: Zebrahub multiome snATAC (pan-cell-type accessibility)
+
+Adds an orthogonal "open across *cell types*" axis to our bulk "open across
+*stages*" criterion (Bhattacharya et al. 2024, bioRxiv 2024.10.18.618987; GRCz11).
+10x multiome, timepoints **10/12/14/16/19/24 hpf** — includes the 24 hpf scoring
+window with real cell-type diversity.
+
+- Raw: SRA BioProject **PRJNA1164307**
+- Processed (download one): snATAC **`.h5ad`**, or a pseudobulk **peak matrix
+  (cell-type x peak) + peak BED** — Google Drive folder `1lk3VdHQuEiXTHZufMXp0C84T3pncqdCF`
+  (see repo github.com/czbiohub-sf/zebrahub-multiome-analysis, notebooks
+  `Fig_peak_umap/` and `EDA_peak_parts_list/`)
+- Portal: https://zebrahub.ds.czbiohub.org/
+
+Run (annotates candidate_feature_table with pan_celltype_frac):
+  # .h5ad needs anndata -> use the zmarker env
+  /opt/homebrew/Caskroom/miniconda/base/envs/zmarker/bin/python \
+    scripts/25_zebrahub_celltype_accessibility.py --h5ad <snATAC.h5ad> --timepoint 24hpf
+  # or from a matrix:
+  python3 scripts/25_zebrahub_celltype_accessibility.py --peaks <peaks.bed> --matrix <celltype_x_peak.csv>
+
+May need a one-line tweak for the object's cell-type obs key (--celltype-key) /
+peak var format once the file is inspected.
