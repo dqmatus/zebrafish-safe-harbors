@@ -45,3 +45,6 @@ results/*.bed
 *.bigwig
 *.bw
 *.gz
+
+# IGV batch scripts + snapshots (machine-specific absolute paths / image outputs)
+results/igv/
