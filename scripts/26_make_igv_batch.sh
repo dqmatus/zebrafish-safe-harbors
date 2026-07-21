@@ -94,6 +94,7 @@ resolve_loci() {
     echo "goto ${fchrom}:$((fs-PAD))-$((fe+PAD))"
     echo "snapshot ${fname}.png"
   done
+  echo "exit"   # close IGV after snapshots (remove this line to keep IGV open for interactive use)
 } > "$BAT"
 
 echo "wrote $BAT"
