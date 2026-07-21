@@ -17,7 +17,8 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 OUTDIR="$REPO/results/igv"; TDIR="$OUTDIR/tracks"
 BAT="$OUTDIR/safe_harbors.bat"
-WINDOW=10000             # fixed panel width (bp), centered on each locus
+WINDOW=10000             # fixed panel width (bp) for the peak/mark comparison
+WIDE=120000              # wide gene-context panel (bp) per safe harbor -> shows the gene desert
 mkdir -p "$TDIR"
 
 # Excluded-region foils: intergenic ATAC peaks WITH active marks (accessible like a
@@ -36,7 +37,7 @@ TRACKSPEC=(
   "annotation/chip/H3K4me3_peaks.bed|H3K4me3|178,24,43"
   "annotation/chip/CTCF_peaks.bed|CTCF|118,42,131"
   "annotation/chip/H3K27me3_peaks.bed|H3K27me3 (Polycomb)|128,128,128"
-  "annotation/chip/other_chip_peaks.bed|other ChIP (H3K36me3/H2A.Z/PolII/TF)|140,81,10"
+  "annotation/chip/other_chip_peaks.bed|other ChIP|140,81,10"
   "annotation/regulatory/validated_enhancers.bed|validated enhancers|230,97,1"
   "annotation/regulatory/promoters.bed|promoters|166,54,3"
   "annotation/conservation/gerp_constrained_elements.bed|conservation (GERP)|27,158,119"
@@ -74,11 +75,11 @@ resolve_loci() {
   fi
 }
 
-# uniform WINDOW-wide view centered on a locus
+# fixed-width view centered on a locus: win_goto chrom start end [width]
 win_goto() {
-  local chrom=$1 s=$2 e=$3 c
+  local chrom=$1 s=$2 e=$3 w=${4:-$WINDOW} c
   c=$(( (s + e) / 2 ))
-  echo "goto ${chrom}:$(( c - WINDOW/2 ))-$(( c + WINDOW/2 ))"
+  echo "goto ${chrom}:$(( c - w/2 ))-$(( c + w/2 ))"
 }
 
 {
@@ -89,8 +90,11 @@ win_goto() {
   for t in "${STYLED[@]}"; do echo "load $t"; done
   while IFS=$'\t' read -r name loc; do
     [ -z "${loc:-}" ] && continue
-    chrom=${loc%%:*}; rest=${loc#*:}; win_goto "$chrom" "${rest%-*}" "${rest#*-}"
+    chrom=${loc%%:*}; rest=${loc#*:}; s=${rest%-*}; e=${rest#*-}
+    win_goto "$chrom" "$s" "$e"            # 10kb peak/mark comparison
     echo "snapshot safe_harbor_${name}.png"
+    win_goto "$chrom" "$s" "$e" "$WIDE"    # wide gene-context (shows the gene desert)
+    echo "snapshot safe_harbor_${name}_genecontext.png"
   done < <(resolve_loci "$@")
   for fo in "${FOILS[@]}"; do
     fname=${fo%%|*}; floc=${fo#*|}; fchrom=${floc%%:*}; frest=${floc#*:}
