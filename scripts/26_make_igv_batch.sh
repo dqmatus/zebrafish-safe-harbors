@@ -1,54 +1,62 @@
 #!/bin/bash
 # 26_make_igv_batch.sh
-# Generate an IGV batch script that loads the safe-harbor evidence tracks
-# (constitutive ATAC + candidate + the ChIP/regulatory/conservation exclusion
-# tracks) and snapshots one or more candidate loci — showing an ATAC peak
-# present over the candidate with every excluded track blank underneath.
+# Generate a STYLED IGV batch that snapshots safe-harbor candidates next to
+# "accessible-but-excluded" foils, with clean track names, a color scheme, and a
+# uniform window — publication-ready panels showing an ATAC peak present over the
+# candidate with every excluded track blank underneath (and filled at the foils).
 #
 # Usage:
-#   scripts/26_make_igv_batch.sh                     # top 3 candidates (by composite rank)
-#   scripts/26_make_igv_batch.sh chr12:24289888-24291839 chr6:35551173-35552810
-#   scripts/26_make_igv_batch.sh cope_chr1           # by locus name in the donor design
+#   scripts/26_make_igv_batch.sh                          # top 3 candidates + foils
+#   scripts/26_make_igv_batch.sh chr12:24289888-24291839  # explicit loci
+#   scripts/26_make_igv_batch.sh cope_chr1                # donor-design locus name
 #
-# Then in IGV:  Tools -> Run Batch Script -> results/igv/safe_harbors.bat
-#          or:  igv.sh -b results/igv/safe_harbors.bat   (headless)
-# Snapshots land in results/igv/*.png
+# Run: the command printed at the end (uses your installed IGV.app + bundled JDK).
+# Snapshots + styled tracks land in results/igv/.
 
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-OUTDIR="$REPO/results/igv"
+OUTDIR="$REPO/results/igv"; TDIR="$OUTDIR/tracks"
 BAT="$OUTDIR/safe_harbors.bat"
-PAD=4000                 # bp of flank added around each candidate (gene-desert context)
-mkdir -p "$OUTDIR"
+WINDOW=10000             # fixed panel width (bp), centered on each locus
+mkdir -p "$TDIR"
 
-# Excluded-region foils for side-by-side comparison: intergenic ATAC peaks that
-# carry active chromatin marks (H3K27ac+H3K4me1+H3K4me3) — accessible like a safe
-# harbor but removed by the ChIP screen. "name|chrom:start-end".
+# Excluded-region foils: intergenic ATAC peaks WITH active marks (accessible like a
+# safe harbor, removed by the ChIP screen). "name|chrom:start-end".
 FOILS=(
-  "EXCLUDED_enhancer_sema4c|chr5:14843192-14844205"    # 195kb from sema4c; H3K27ac+H3K4me1+H3K4me3
-  "EXCLUDED_enhancer_SH2D4B|chr13:21319046-21319511"   # 281kb from SH2D4B; all three marks
+  "EXCLUDED_enhancer_sema4c|chr5:14843192-14844205"
+  "EXCLUDED_enhancer_SH2D4B|chr13:21319046-21319511"
 )
 
-# ---- tracks (order = top->bottom in IGV); only load those that exist ----
-TRACKS=(
-  "results/consensus_peaks_100pct.bed"                 # ATAC: open in 100% of stages
-  "results/safe_harbors_biological_100pct_sized.bed"   # the candidate call
-  "annotation/chip/H3K27ac_peaks.bed"
-  "annotation/chip/H3K4me1_peaks.bed"
-  "annotation/chip/H3K4me3_peaks.bed"
-  "annotation/chip/CTCF_peaks.bed"
-  "annotation/chip/H3K27me3_peaks.bed"
-  "annotation/chip/other_chip_peaks.bed"
-  "annotation/regulatory/validated_enhancers.bed"
-  "annotation/regulatory/promoters.bed"
-  "annotation/conservation/gerp_constrained_elements.bed"
-  "annotation/conservation/CNEs.bed"
+# track styling: "relpath | display name | R,G,B"  (order = top->bottom)
+TRACKSPEC=(
+  "results/consensus_peaks_100pct.bed|ATAC 100% consensus|33,102,172"
+  "results/safe_harbors_biological_100pct_sized.bed|safe-harbor candidate|35,139,69"
+  "annotation/chip/H3K27ac_peaks.bed|H3K27ac|202,0,32"
+  "annotation/chip/H3K4me1_peaks.bed|H3K4me1|244,109,67"
+  "annotation/chip/H3K4me3_peaks.bed|H3K4me3|178,24,43"
+  "annotation/chip/CTCF_peaks.bed|CTCF|118,42,131"
+  "annotation/chip/H3K27me3_peaks.bed|H3K27me3 (Polycomb)|128,128,128"
+  "annotation/chip/other_chip_peaks.bed|other ChIP (H3K36me3/H2A.Z/PolII/TF)|140,81,10"
+  "annotation/regulatory/validated_enhancers.bed|validated enhancers|230,97,1"
+  "annotation/regulatory/promoters.bed|promoters|166,54,3"
+  "annotation/conservation/gerp_constrained_elements.bed|conservation (GERP)|27,158,119"
+  "annotation/conservation/CNEs.bed|CNEs|102,194,165"
 )
+
+# ---- stage styled copies (UCSC track line: name + color, collapsed) ----
+STYLED=()
+i=0
+for spec in "${TRACKSPEC[@]}"; do
+  IFS='|' read -r rel name rgb <<< "$spec"
+  [ -f "$REPO/$rel" ] || continue
+  out="$TDIR/$(printf '%02d' "$i")_$(basename "$rel")"
+  { echo "track name=\"$name\" color=$rgb visibility=1 itemRgb=Off"; cut -f1-4 "$REPO/$rel"; } > "$out"
+  STYLED+=("$out"); i=$((i+1))
+done
 
 # ---- resolve requested loci -> "name<TAB>chrom:start-end" ----
 resolve_loci() {
   if [ "$#" -eq 0 ]; then
-    # top 3 candidates on real chromosomes, by composite rank (col 15)
     tail -n +2 "$REPO/results/candidate_feature_table.tsv" \
       | awk -F'\t' '$1 ~ /^chr([1-9]|1[0-9]|2[0-5])$/' \
       | sort -t$'\t' -k15,15 -gr | head -3 \
@@ -58,8 +66,6 @@ resolve_loci() {
       if [[ "$q" == *:*-* ]]; then
         echo -e "$(echo "$q" | tr ':-' '__')\t$q"
       else
-        # locus name from the donor design (e.g. cope_chr1)
-        awk -F'\t' -v s="$q" '$1==s{print s"\t"$3":"($7~/:/?"":"")""}' "$REPO/results/knockin_donor_design.tsv" >/dev/null 2>&1
         row=$(awk -F'\t' -v s="$q" '$1==s{print $3"\t"$7}' "$REPO/results/knockin_donor_design.tsv")
         chrom=$(echo "$row" | cut -f1); cut=$(echo "$row" | cut -f2 | cut -d: -f2)
         [ -n "$cut" ] && echo -e "${q}\t${chrom}:$((cut-800))-$((cut+800))" || echo "  (locus $q not found)" >&2
@@ -68,48 +74,40 @@ resolve_loci() {
   fi
 }
 
+# uniform WINDOW-wide view centered on a locus
+win_goto() {
+  local chrom=$1 s=$2 e=$3 c
+  c=$(( (s + e) / 2 ))
+  echo "goto ${chrom}:$(( c - WINDOW/2 ))-$(( c + WINDOW/2 ))"
+}
+
 {
   echo "new"
   echo "genome danRer11"
   echo "snapshotDirectory $OUTDIR"
   echo "maxPanelHeight 2000"
-  for t in "${TRACKS[@]}"; do
-    [ -f "$REPO/$t" ] && echo "load $REPO/$t"
-  done
-  # keep the excluded tracks compact so blank rows read cleanly
-  for t in H3K27ac_peaks H3K4me1_peaks H3K4me3_peaks CTCF_peaks H3K27me3_peaks other_chip_peaks \
-           validated_enhancers promoters gerp_constrained_elements CNEs; do
-    echo "squish $t"
-  done
+  for t in "${STYLED[@]}"; do echo "load $t"; done
   while IFS=$'\t' read -r name loc; do
     [ -z "${loc:-}" ] && continue
-    chrom=${loc%%:*}; rest=${loc#*:}; s=${rest%-*}; e=${rest#*-}
-    echo "goto ${chrom}:$((s-PAD))-$((e+PAD))"
+    chrom=${loc%%:*}; rest=${loc#*:}; win_goto "$chrom" "${rest%-*}" "${rest#*-}"
     echo "snapshot safe_harbor_${name}.png"
   done < <(resolve_loci "$@")
-  # excluded-region foils (comparison: same accessible/intergenic context, WITH ChIP marks)
   for fo in "${FOILS[@]}"; do
-    fname=${fo%%|*}; floc=${fo#*|}
-    fchrom=${floc%%:*}; frest=${floc#*:}; fs=${frest%-*}; fe=${frest#*-}
-    echo "goto ${fchrom}:$((fs-PAD))-$((fe+PAD))"
+    fname=${fo%%|*}; floc=${fo#*|}; fchrom=${floc%%:*}; frest=${floc#*:}
+    win_goto "$fchrom" "${frest%-*}" "${frest#*-}"
     echo "snapshot ${fname}.png"
   done
-  echo "exit"   # close IGV after snapshots (remove this line to keep IGV open for interactive use)
+  echo "exit"   # remove to keep IGV open for interactive use
 } > "$BAT"
 
-echo "wrote $BAT"
-echo "  tracks: $(grep -c '^load ' "$BAT") | snapshots: $(grep -c '^snapshot ' "$BAT")"
-grep -E '^goto|^snapshot' "$BAT" | sed 's/^/    /'
-
-# print a ready-to-run command for an installed IGV.app (bundled JDK)
+echo "wrote $BAT  (styled tracks in $TDIR)"
+echo "  ${#STYLED[@]} tracks | $(grep -c '^snapshot ' "$BAT") snapshots | ${WINDOW}bp uniform window"
+grep -E '^snapshot' "$BAT" | sed 's/^/    /'
 APP=$(ls -d /Applications/IGV_*.app 2>/dev/null | sort -V | tail -1)
 if [ -n "$APP" ]; then
   JV=$(find "$APP/Contents" -maxdepth 3 -path '*/bin/java' -type f 2>/dev/null | head -1)
-  LIB="$APP/Contents/Java/lib"; ARGS="$APP/Contents/Java/igv.args"
   echo ""
-  echo "  run from terminal (renders, snapshots to $OUTDIR, then exits):"
-  echo "    \"$JV\" @\"$ARGS\" -Xmx4g --module-path=\"$LIB\" \\"
+  echo "  run from terminal:"
+  echo "    \"$JV\" @\"$APP/Contents/Java/igv.args\" -Xmx4g --module-path=\"$APP/Contents/Java/lib\" \\"
   echo "      --module=org.igv/org.broad.igv.ui.Main -b \"$BAT\""
-else
-  echo "  (in IGV: Tools -> Run Batch Script -> $BAT)"
 fi
