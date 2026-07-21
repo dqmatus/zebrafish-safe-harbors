@@ -99,5 +99,17 @@ resolve_loci() {
 
 echo "wrote $BAT"
 echo "  tracks: $(grep -c '^load ' "$BAT") | snapshots: $(grep -c '^snapshot ' "$BAT")"
-echo "  run in IGV: Tools -> Run Batch Script -> $BAT   (or: igv.sh -b $BAT)"
 grep -E '^goto|^snapshot' "$BAT" | sed 's/^/    /'
+
+# print a ready-to-run command for an installed IGV.app (bundled JDK)
+APP=$(ls -d /Applications/IGV_*.app 2>/dev/null | sort -V | tail -1)
+if [ -n "$APP" ]; then
+  JV=$(find "$APP/Contents" -maxdepth 3 -path '*/bin/java' -type f 2>/dev/null | head -1)
+  LIB="$APP/Contents/Java/lib"; ARGS="$APP/Contents/Java/igv.args"
+  echo ""
+  echo "  run from terminal (renders, snapshots to $OUTDIR, then exits):"
+  echo "    \"$JV\" @\"$ARGS\" -Xmx4g --module-path=\"$LIB\" \\"
+  echo "      --module=org.igv/org.broad.igv.ui.Main -b \"$BAT\""
+else
+  echo "  (in IGV: Tools -> Run Batch Script -> $BAT)"
+fi
