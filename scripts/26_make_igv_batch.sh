@@ -21,6 +21,14 @@ BAT="$OUTDIR/safe_harbors.bat"
 PAD=4000                 # bp of flank added around each candidate (gene-desert context)
 mkdir -p "$OUTDIR"
 
+# Excluded-region foils for side-by-side comparison: intergenic ATAC peaks that
+# carry active chromatin marks (H3K27ac+H3K4me1+H3K4me3) — accessible like a safe
+# harbor but removed by the ChIP screen. "name|chrom:start-end".
+FOILS=(
+  "EXCLUDED_enhancer_sema4c|chr5:14843192-14844205"    # 195kb from sema4c; H3K27ac+H3K4me1+H3K4me3
+  "EXCLUDED_enhancer_SH2D4B|chr13:21319046-21319511"   # 281kb from SH2D4B; all three marks
+)
+
 # ---- tracks (order = top->bottom in IGV); only load those that exist ----
 TRACKS=(
   "results/consensus_peaks_100pct.bed"                 # ATAC: open in 100% of stages
@@ -79,6 +87,13 @@ resolve_loci() {
     echo "goto ${chrom}:$((s-PAD))-$((e+PAD))"
     echo "snapshot safe_harbor_${name}.png"
   done < <(resolve_loci "$@")
+  # excluded-region foils (comparison: same accessible/intergenic context, WITH ChIP marks)
+  for fo in "${FOILS[@]}"; do
+    fname=${fo%%|*}; floc=${fo#*|}
+    fchrom=${floc%%:*}; frest=${floc#*:}; fs=${frest%-*}; fe=${frest#*-}
+    echo "goto ${fchrom}:$((fs-PAD))-$((fe+PAD))"
+    echo "snapshot ${fname}.png"
+  done
 } > "$BAT"
 
 echo "wrote $BAT"
