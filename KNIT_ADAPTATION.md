@@ -23,13 +23,17 @@ Your **already-ORDERED `/5AmMC6/` donors (DM418–423) still run your current Ca
 
 ## Change 1 — the editor (RNP route)
 
-You need **purified nCas9(D10A)–mSA–His protein** instead of your current SpCas9. The paper cloned **SpCas9D10A-NLS-mSA-NLS-His in pET28b** and purified it by Ni-NTA — a standard prep. Acquisition options, easiest first:
+You need **purified nCas9(D10A)–mSA protein** in place of your current SpCas9. Supplementary Table 2 confirms **none of the KE constructs are on Addgene** (all "this paper / N/A") — but Supplementary **Note 5 publishes the complete KE1 amino-acid sequence**, so the fastest path is to **synthesize it, not wait on the lab.** The full sequence (1,574 aa; D10A and the C-terminal mSA domain verified) is in **`results/knit_editor_protein_sequences.fasta`** (KE2/SunTag is in the same file for later).
 
-- **Request the protein or the pET28b expression plasmid from the Wang lab** (KE plasmids are not on Addgene; data page: https://www.wanglab-thu.org.cn/knit).
-- **Rebuild:** install D10A in an SpCas9-NLS-His backbone and fuse mSA (the paper's fusion is `SpCas9(D10A)-NLS-mSA-NLS-His`); express/purify in-house or via a contract service.
-- Note: commercial "Cas9 D10A nickase" protein exists, but **without the mSA fusion it will not tether the donor** — the fusion is essential. (KE2/SunTag is a later efficiency upgrade; start with KE1 = the single mSA fusion.)
+Recommended route — in-house or contract expression:
 
-Assemble exactly as your current RNP, then **pre-mix the biotinylated donor with the assembled RNP before injection** so the mSA–biotin tether pre-forms — the configuration KNIT relies on and the one most likely to matter in the rapid 1-cell embryo.
+1. Reverse-translate the KE1 sequence, codon-optimize for *E. coli*, gene-synthesize, and clone into **pET28b with a C-terminal 6×His** (the paper's construct is `pET28b-NLS-SpCas9D10A-NLS-mSA-NLS-6×His`).
+2. Express + purify per **Supplementary Note 4**: Rosetta BL21(DE3); lyse in 500 mM NaCl / 20 mM Tris pH 7.5 / 10% glycerol / 20 mM imidazole / 1 mM TCEP / 1 mM PMSF; **Ni-NTA** (wash 60 mM, elute 250 mM imidazole) → **Mono S 5/50** cation exchange → **Superdex 200** (S200 buffer: 300 mM NaCl / 20 mM Tris pH 7.5 / 10% glycerol / 1 mM TCEP); store −80 °C. This is a standard SpCas9-grade prep — any core or contract shop that already makes Cas9 protein can make this.
+3. Courtesy alternative: request the pET28b plasmid from the Wang lab (https://www.wanglab-thu.org.cn/knit), useful at least as a sequence cross-check even if you synthesize.
+
+Note: commercial "Cas9 D10A nickase" protein will **not** work — the mSA fusion *is* the tethering mechanism, so it must be the fusion. Start with KE1; KE2 (SunTag) is a later efficiency upgrade.
+
+Assemble exactly as your current RNP, then **pre-mix the biotinylated donor with the assembled RNP before injection** so the mSA–biotin tether pre-forms — the configuration KNIT relies on and the one most likely to matter in the rapid 1-cell embryo. (If you'd rather stay closer to a "just add mRNA" workflow, the same ORF transcribed as capped/polyadenylated mRNA also works — the paper validated both — but RNP matches your current protocol and pre-forms the tether.)
 
 ## Change 2 — the donor (biotin instead of amine)
 
