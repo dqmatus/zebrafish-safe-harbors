@@ -27,7 +27,7 @@ You need **purified nCas9(D10A)–mSA protein** in place of your current SpCas9.
 
 Recommended route — in-house or contract expression:
 
-1. Reverse-translate the KE1 sequence, codon-optimize for *E. coli*, gene-synthesize, and clone into **pET28b with a C-terminal 6×His** (the paper's construct is `pET28b-NLS-SpCas9D10A-NLS-mSA-NLS-6×His`).
+1. Reverse-translate the KE1 sequence, codon-optimize for *E. coli*, gene-synthesize, and clone into **pET28b with a C-terminal 6×His** (the paper's construct is `pET28b-NLS-SpCas9D10A-NLS-mSA-NLS-6×His`). **This is done:** `results/knit_KE1_pET28b_orf.fasta` is a synthesis-ready 4,766 bp insert (E. coli-optimized, 55% GC, no internal NdeI/XhoI, verified to back-translate exactly to M-KE1-6×His) — order as a gene fragment and clone **NdeI/XhoI into pET28b(+)** (the NdeI ATG is the start, bypassing the vector N-terminal tag; the insert carries its own C-terminal 6×His + stop). Regenerate with `scripts/28_knit_KE1_expression_orf.py`. Submit to the vendor's manufacturability QC (they'll flag/repair any local GC or repeat regions).
 2. Express + purify per **Supplementary Note 4**: Rosetta BL21(DE3); lyse in 500 mM NaCl / 20 mM Tris pH 7.5 / 10% glycerol / 20 mM imidazole / 1 mM TCEP / 1 mM PMSF; **Ni-NTA** (wash 60 mM, elute 250 mM imidazole) → **Mono S 5/50** cation exchange → **Superdex 200** (S200 buffer: 300 mM NaCl / 20 mM Tris pH 7.5 / 10% glycerol / 1 mM TCEP); store −80 °C. This is a standard SpCas9-grade prep — any core or contract shop that already makes Cas9 protein can make this.
 3. Courtesy alternative: request the pET28b plasmid from the Wang lab (https://www.wanglab-thu.org.cn/knit), useful at least as a sequence cross-check even if you synthesize.
 
