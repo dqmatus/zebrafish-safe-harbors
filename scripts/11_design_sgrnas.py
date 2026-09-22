@@ -12,11 +12,11 @@ Find candidate SpCas9 sgRNA sites within the top safe-harbor candidates.
 - Scores preference for cut sites near the region center (good for central knock-in)
 - Writes results/sgrna_candidates.tsv
 
-This is an ON-TARGET ENUMERATOR ONLY. It does NOT score genome-wide off-target
-specificity (a local cas-offinder run was unreliable on this machine's OpenCL
-backend). For specificity (MIT/CFD) + efficiency (Doench) scoring, submit the
-candidate regions (results/top5_candidates_for_crispor.fa) to CRISPOR (danRer11);
-the curated, specificity-ranked picks live in results/sgrna_shortlist.tsv.
+This is an ON-TARGET ENUMERATOR ONLY. Genome-wide off-target specificity is now
+scored AUTONOMOUSLY by 11b_offtarget_bwa.py (local bwa, exon-aware), which reads this
+script's output and writes a safety-ranked shortlist (results/sgrna_shortlist_auto.tsv)
+without a manual CRISPOR round-trip. CRISPOR (MIT/CFD + Doench) remains available via
+scripts 15/16 as an OPTIONAL final check on the chosen guides.
 
 Usage: python3 scripts/11_design_sgrnas.py [TOP_N] [--include-scaffolds]
 """

@@ -33,9 +33,10 @@ the Zebrahub single-nucleus atlas.
                               (discard-whole: any candidate touching a track is dropped)
 09_annotate_candidates.sh   → Rich feature table with composite ranking
 10_benchmark.sh             → Validation against pIGLET/SB known sites
-11_design_sgrnas.py         → Enumerate on-target SpCas9 (NGG) guides for top
-                              candidates (specificity/efficiency scored in CRISPOR;
-                              picks in results/sgrna_shortlist.tsv)
+11_design_sgrnas.py         → Enumerate on-target SpCas9 (NGG) guides for top candidates
+11b_offtarget_bwa.py        → Local, autonomous genome-wide off-target screen (bwa,
+                              exon-aware) → safety-ranked results/sgrna_shortlist_auto.tsv
+                              (replaces the manual CRISPOR round-trip; CRISPOR optional via 15/16)
 12_relaxed_tier.sh          → Alternate candidate list at a relaxed gene-distance
                               buffer (2kb); reuses 08→08b→09 via env vars
 13_mappability.sh           → genmap K-mer uniqueness mask (eLife GSH criterion)
@@ -214,10 +215,12 @@ GenBank maps) are consolidated in `results/locus_design_summary.tsv` and
 **chr24/inhbaa** (top de novo GSH), **cope_chr1** and **cope_chr14** (COPE-anchored
 constitutive elements), and **pIGLET24b_v2** (re-guided validated benchmark site).
 
-> **NOTE — off-target tooling:** local `cas-offinder` was unreliable on this
-> machine (OpenCL CPU device absent; the GPU backend produced spurious hits that
-> failed genome verification). **Use CRISPOR for specificity**, not the local run.
-> `scripts/11_design_sgrnas.py` is on-target enumeration only.
+> **NOTE — off-target tooling:** off-target specificity is now screened
+> **autonomously and locally** by `scripts/11b_offtarget_bwa.py` (bwa aln → NGG-PAM
+> filter → exon-aware mismatch classification → safety-ranked shortlist), replacing the
+> manual CRISPOR web round-trip (local `cas-offinder` was unreliable here — OpenCL CPU
+> device absent). CRISPOR (MIT/CFD + Doench) remains available via scripts 15/16 as an
+> optional final check. `11_design_sgrnas.py` is the on-target enumerator that feeds 11b.
 
 ### Validation Benchmark
 Three experimentally-validated attP/integration sites are benchmarked. All three are
@@ -289,8 +292,8 @@ only CTCF in DANIO-CODE.
 
 ### Pipeline Must Be Re-run After Changes
 ⚠️ Any changes to exclusion criteria, consensus parameters, or input data
-require re-running scripts 07 → 08 → 08b → 09 → 10. Do not design sgRNAs
-from stale results.
+require re-running scripts 07 → 08 → 08b → 09 → 10 → 11 → 11b. Do not design
+sgRNAs from stale results.
 
 ## Configuration
 
@@ -352,6 +355,10 @@ bash scripts/08_find_safe_harbors.sh
 bash scripts/08b_biological_filters.sh
 bash scripts/09_annotate_candidates.sh
 bash scripts/10_benchmark.sh
+
+# sgRNA design — autonomous (local off-target, no manual CRISPOR)
+python3 scripts/11_design_sgrnas.py 5      # enumerate on-target guides for the top 5
+python3 scripts/11b_offtarget_bwa.py       # local off-target screen -> sgrna_shortlist_auto.tsv
 ```
 
 ## Repository Structure

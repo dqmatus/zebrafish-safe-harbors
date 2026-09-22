@@ -32,7 +32,7 @@ flowchart TD
     P3b["③ Regulatory / inertness screen &nbsp;(08b — discard-whole)<br/><small>drop peaks overlapping active ChIP · Polycomb H3K27me3 · other ChIP ·<br/>validated CREs · conservation (GERP+CNE) · low mappability (genmap K50) ·<br/>buffered miRNA ±50 kb · lncRNA ±25 kb</small>"]
     P4["④ Annotate & rank &nbsp;(09)<br/><small>nearest gene · GC · conservation · sgRNA · TAD · stage count ·<br/>COPE/DOPE flag → composite rank</small>"]
     P5["⑤ Validation benchmarks &nbsp;(10)<br/><small>pIGLET14a/24b · tpl102 — exon-proximal, INCONCLUSIVE by design</small>"]
-    P6["⑥ Knock-in reagent design &nbsp;(11–18)<br/><small>sgRNA enumeration → CRISPOR specificity → PCR donor (45 bp HA + cassette)<br/>→ genotyping + junction primers → WT & INTEGRATED GenBank maps</small>"]
+    P6["⑥ Knock-in reagent design &nbsp;(11–18)<br/><small>sgRNA enumeration (11) → autonomous local off-target screen (11b, bwa/exon-aware)<br/>→ PCR donor (45 bp HA + cassette) → genotyping + junction primers → WT & INTEGRATED GenBank maps<br/>(CRISPOR MIT/CFD optional via 15/16)</small>"]
     OUT([OUTPUT: ranked, inert, constitutively-open safe-harbor loci<br/>+ ready-to-order knock-in reagents])
 
     T["<b>three candidate tiers</b><br/>strict (gene-distal) 1,693<br/>relaxed (±2 kb) 2,090<br/>intron-permissive 4,131"]
