@@ -36,20 +36,18 @@ Extracted from `annotation/baranasic_2022_MOESM3.xlsx` by
 - **Promoters** (consensus T4 + core T13, 20,990 regions) — `PROMOTERS_BED`
 - **Novel intergenic lncRNA/TUCP** (T3, 381 regions) — `NOVEL_LNCRNA_BED`
 
-#### Conservation Tracks
+#### Conservation Tracks — ⚙️ IMPLEMENTED (data-gated)
 
-- **Conservation (PhyloCSF / phastCons)**
-  - Status: NOT INCLUDED
-  - Source: UCSC Genome Browser or PhyloCSF track for danRer11
-  - Usage: Exclude highly conserved non-coding elements (potential regulatory regions)
-  - Config parameter: `CONSERVATION_BED`
-  - Recommendation: Use phastCons score >= 0.8 (highly conserved)
+Filter + extraction implemented (`scripts/04d_extract_conservation_tracks.sh`),
+applied as exclusion in 08b Step 2; no-op until the data BEDs are present
+(`conservation_frac` is currently empty in the candidate table).
 
-- **Conserved Non-Coding Elements (CNEs)**
-  - Status: NOT INCLUDED
-  - Source: Genomicus or UCSC Genome Browser
-  - Usage: Explicit CNE exclusion list
-  - Config parameter: `CNE_BED`
+- **GERP constrained elements** — `CONSERVATION_BED`
+  - Source: Ensembl/UCSC GERP++ constrained elements (danRer11)
+  - Usage: exclude highly constrained non-coding sequence (potential regulatory)
+- **Ancora CNEs** — `CNE_BED`
+  - Source: Ancora conserved non-coding elements (danRer11)
+  - Usage: explicit CNE exclusion list
 
 #### Hi-C / TAD Data
 
@@ -60,28 +58,26 @@ Extracted from `annotation/baranasic_2022_MOESM3.xlsx` by
   - Config parameter: `TAD_BOUNDARIES_BED`
   - Note: Currently only for flagging, not exclusion
 
-#### DANIO-CODE COPE/DOPE Tracks
+#### DANIO-CODE COPE/DOPE Tracks — ✅ ACQUIRED
 
-- **COPE (Chromatin Open but lacking Promoter marks)**
-  - Status: NOT INCLUDED
-  - Source: DANIO-CODE derived or custom analysis
-  - Usage: Identify truly "open but inert" regions (open chromatin without active marks)
-  - Config parameter: `COPE_BED`
+Downloaded by `scripts/04e_extract_cope_dope.sh` from the DANIO-CODE track hub
+(`danio-code-dcc.genereg.net`; `copes_dr11.bb` / `dopes_all_dr11.bb`) and
+cross-referenced in 08b Step 6 / 09 as a positive "open-but-inert" annotation
+(not an exclusion). Of the 1,693 strict candidates, 19 overlap a COPE and 52 a DOPE
+(`in_cope` / `in_dope`).
 
-- **DOPE (Distal Open Chromatin)**
-  - Status: NOT INCLUDED
-  - Source: DANIO-CODE derived
-  - Usage: Cross-check consensus peaks for distal regulatory signals
-  - Config parameter: `DOPE_BED`
+- **COPE** — constitutively open chromatin lacking active CRE histone marks
+  ("open but inert"). `COPE_BED`
+- **DOPE** — the developmentally-regulated counterpart. `DOPE_BED`
 
 ### PHASE 3: Mappability & Blacklist
 
-- **Mappability Map (50-mer or 36-mer)**
-  - Status: NOT INCLUDED
-  - Source: GEM mappability (danRer11) or ENCODE blacklist derivative
+- **Mappability Map (genmap K-mer)** — ⚙️ IMPLEMENTED (data-gated)
+  - Status: filter implemented (`scripts/13_mappability.sh`, genmap K-mer uniqueness);
+    no-op until the mappability BED is generated/present
+  - Source: genmap (danRer11) — the eLife GSH uniqueness criterion
   - Usage: Exclude low-mappability / multi-mapping regions
   - Config parameter: `MAPPABILITY_BED`
-  - Threshold: Recommended min mappability >= 0.8
 
 - **Segmental Duplication Regions**
   - Status: NOT INCLUDED
@@ -97,12 +93,11 @@ Extracted from `annotation/baranasic_2022_MOESM3.xlsx` by
 
 ### PHASE 3: GSH Criteria Enhancement
 
-- **miRNA/ncRNA Coordinates**
-  - Status: NOT INCLUDED (currently only protein-coding genes in filters)
-  - Source: Ensembl BioMart (gene biotype = miRNA or ncRNA)
-  - Usage: Gene ± buffer criteria should include small RNAs for complete "gene-distal" definition
-  - Required file: `mirna_ncrna_coordinates.bed`
-  - Config parameter: `GENE_BED_COMPREHENSIVE` (replace `genes.bed` with version including ncRNAs)
+- **miRNA/ncRNA Coordinates** — ✅ ACQUIRED
+  - Status: extracted by `scripts/04c_extract_ncrna_tracks.sh`; the eLife ncRNA
+    distance criteria (miRNA ±50 kb, lncRNA ±25 kb) are applied
+  - Source: Ensembl BioMart (gene biotype = miRNA / lncRNA)
+  - Config parameter: `MIRNA_NCRNA_BED`, `LNCRNA_BED`
 
 - **Dosage-Sensitive Genes**
   - Status: NOT INCLUDED
@@ -124,31 +119,22 @@ Extracted from `annotation/baranasic_2022_MOESM3.xlsx` by
 
 ### PHASE 4: sgRNA Targetability
 
-- **sgRNA Pre-computation (CRISPOR or FlashFry)**
-  - Status: NOT INCLUDED
-  - Source: CRISPOR web server or local FlashFry run
-  - Usage: Filter candidates by sgRNA availability and off-target scores
-  - Output format: BED with sgRNA score in column 5+
+- **sgRNA Pre-computation (CRISPOR)** — ✅ DONE
+  - Status: on-target guides enumerated (`scripts/11_design_sgrnas.py`,
+    `15_cope_target_guides.py`), scored in CRISPOR (MIT/CFD + Doench '16), curated in
+    `results/sgrna_shortlist.tsv` and `results/locus_design_summary.tsv`
   - Config parameter: `SGRNA_BED`
-  - Note: Must be pre-computed per candidate; recommend min specificity >= 0.95
+  - Note: local cas-offinder was unreliable — CRISPOR is authoritative for specificity
 
 ### PHASE 5: Validation Benchmarks
 
-#### pIGLET Coordinates
+#### pIGLET Coordinates — ✅ ACQUIRED
 
-- **pIGLET14a insertion site**
-  - Status: NOT INCLUDED
-  - Source: Original pIGLET manuscript or lab provenance
-  - Usage: Validate that pIGLET14a ranks lower than pIGLET24b
-  - Expected: chr?, ?-? bp
-  - Config parameter: `PIGLET_14A_BED`
-
-- **pIGLET24b insertion site**
-  - Status: NOT INCLUDED
-  - Source: pIGLET manuscript / lab data
-  - Usage: Validate that pIGLET24b ranks highly (should be in 100% consensus)
-  - Expected: chr?, ?-? bp
-  - Config parameter: `PIGLET_24B_BED`
+Coordinates in `annotation/benchmarks/` (`pIGLET14a_coords.bed`, `pIGLET24b_coords.bed`),
+benchmarked by `scripts/10_benchmark.sh`. Both sit in the 100% consensus but are excluded
+from the final list (pIGLET24b = active chromatin; pIGLET14a = gene-associated) — a
+validation-by-design outcome, not a miss. A re-guided `pIGLET24b_v2` is among the designed
+loci (`results/locus_design_summary.tsv`). Config: `PIGLET_14A_BED`, `PIGLET_24B_BED`.
 
 #### Sleeping Beauty Founder Sites
 
@@ -177,16 +163,15 @@ Extracted from `annotation/baranasic_2022_MOESM3.xlsx` by
 
 | Data Type | Phase | Status | Priority | Notes |
 |-----------|-------|--------|----------|-------|
-| H3K27ac, H3K4me1, H3K4me3, CTCF | 3 | Missing | High | Regulatory element exclusion |
-| Conservation / CNE | 3 | Missing | High | Distal enhancer exclusion |
-| TAD boundaries | 3 | Missing | Medium | Flagging only |
-| COPE/DOPE | 3 | Missing | Low | Cross-validation |
-| Mappability / Blacklist | 3 | Missing | Medium | Reduce artifacts |
-| miRNA/ncRNA annotations | 3 | Missing | High | Complete gene-distal def. |
-| Dosage-sensitive / cancer genes | 3 | Missing | Low | Extra safety margin |
-| UCEs | 3 | Missing | Low | Conservative filtering |
-| sgRNA pre-computation | 4 | Missing | Medium | Testability |
-| pIGLET14a/24b coords | 5 | Missing | High | Validation benchmark |
+| H3K27ac, H3K4me1, H3K4me3, CTCF | 3 | ✅ Acquired | High | Regulatory exclusion (applied) |
+| Conservation (GERP + Ancora CNE) | 3 | ⚙️ Implemented, data-gated | High | Exclusion in 04d / 08b |
+| TAD boundaries | 3 | ⚙️ Implemented, data-gated | Medium | Flagging only (`tad_distance` empty) |
+| COPE/DOPE | 3 | ✅ Acquired | Low | Cross-validation (19 COPE / 52 DOPE) |
+| Mappability (genmap) | 3 | ⚙️ Implemented, data-gated | Medium | Reduce artifacts (script 13) |
+| miRNA/ncRNA annotations | 3 | ✅ Acquired | High | eLife distance criteria applied (04c) |
+| Dosage-sensitive / cancer / UCE | 3 | ⚙️ Buffers configured, data-gated | Low | Gene-list data still needed |
+| sgRNA (CRISPOR) | 4 | ✅ Done | Medium | sgrna_shortlist / locus_design_summary |
+| pIGLET14a/24b coords | 5 | ✅ Acquired | High | annotation/benchmarks/ |
 | SB founder sites | 5 | Missing | Medium | Validation benchmark |
 | DANIO-CODE checksums | 6 | Missing | Low | Reproducibility |
 
