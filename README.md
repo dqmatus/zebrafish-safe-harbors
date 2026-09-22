@@ -38,6 +38,8 @@ the Zebrahub single-nucleus atlas.
                               CRISPRscan on-target efficiency (zebrafish-trained) →
                               safety-ranked results/sgrna_shortlist_auto.tsv (exon-clean
                               guides only; replaces manual CRISPOR — 15/16 optional)
+11c_consolidate_shortlist.py → Audit designed loci: autonomous top pick vs the
+                              injected guide + its rank, per locus (uses 11b's scorers)
 12_relaxed_tier.sh          → Alternate candidate list at a relaxed gene-distance
                               buffer (2kb); reuses 08→08b→09 via env vars
 13_mappability.sh           → genmap K-mer uniqueness mask (eLife GSH criterion)
