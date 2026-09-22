@@ -34,9 +34,10 @@ the Zebrahub single-nucleus atlas.
 09_annotate_candidates.sh   → Rich feature table with composite ranking
 10_benchmark.sh             → Validation against pIGLET/SB known sites
 11_design_sgrnas.py         → Enumerate on-target SpCas9 (NGG) guides for top candidates
-11b_offtarget_bwa.py        → Local, autonomous genome-wide off-target screen (bwa,
-                              exon-aware) → safety-ranked results/sgrna_shortlist_auto.tsv
-                              (replaces the manual CRISPOR round-trip; CRISPOR optional via 15/16)
+11b_offtarget_bwa.py        → Local, autonomous off-target screen (bwa, exon-aware) +
+                              CRISPRscan on-target efficiency (zebrafish-trained) →
+                              safety-ranked results/sgrna_shortlist_auto.tsv (exon-clean
+                              guides only; replaces manual CRISPOR — 15/16 optional)
 12_relaxed_tier.sh          → Alternate candidate list at a relaxed gene-distance
                               buffer (2kb); reuses 08→08b→09 via env vars
 13_mappability.sh           → genmap K-mer uniqueness mask (eLife GSH criterion)
@@ -215,12 +216,14 @@ GenBank maps) are consolidated in `results/locus_design_summary.tsv` and
 **chr24/inhbaa** (top de novo GSH), **cope_chr1** and **cope_chr14** (COPE-anchored
 constitutive elements), and **pIGLET24b_v2** (re-guided validated benchmark site).
 
-> **NOTE — off-target tooling:** off-target specificity is now screened
-> **autonomously and locally** by `scripts/11b_offtarget_bwa.py` (bwa aln → NGG-PAM
-> filter → exon-aware mismatch classification → safety-ranked shortlist), replacing the
-> manual CRISPOR web round-trip (local `cas-offinder` was unreliable here — OpenCL CPU
-> device absent). CRISPOR (MIT/CFD + Doench) remains available via scripts 15/16 as an
-> optional final check. `11_design_sgrnas.py` is the on-target enumerator that feeds 11b.
+> **NOTE — off-target tooling:** guide specificity AND on-target efficiency are now
+> scored **autonomously and locally** by `scripts/11b_offtarget_bwa.py`: bwa aln → NGG-PAM
+> filter → exon-aware off-target tiers, plus CRISPRscan (Moreno-Mateos 2015, zebrafish-
+> injection-trained) on-target efficiency. Guides are ranked **safety-first** — an exonic
+> off-target is a HARD exclusion, then fewest close off-targets → highest CRISPRscan →
+> nearest ATAC-peak center — replacing the manual CRISPOR web round-trip (local
+> `cas-offinder` was unreliable here — OpenCL CPU device absent). CRISPOR (MIT/CFD + Doench)
+> stays optional via 15/16. `11_design_sgrnas.py` is the on-target enumerator that feeds 11b.
 
 ### Validation Benchmark
 Three experimentally-validated attP/integration sites are benchmarked. All three are
