@@ -1,8 +1,11 @@
 # Zebrafish Genomic Safe Harbor Discovery Pipeline
 
 Identifies constitutively accessible, intergenic, gene-distal chromatin regions
-in zebrafish (GRCz11) as candidate single-copy integration / landing-pad sites,
-using DANIO-CODE ATAC-seq data.
+in zebrafish (GRCz11) as candidate single-copy integration / landing-pad sites.
+Constitutive accessibility is called from DANIO-CODE ATAC-seq; inertness is
+screened with DANIO-CODE ChIP-seq, sequence conservation, and the DANIO-CODE
+COPE/DOPE element tracks, and cross-checked for cell-type accessibility against
+the Zebrahub single-nucleus atlas.
 
 📊 **[Pipeline schematic & flowchart → docs/PIPELINE.md](docs/PIPELINE.md)**
 (figure: [`results/pipeline_schematic.png`](results/pipeline_schematic.png))
@@ -16,6 +19,9 @@ using DANIO-CODE ATAC-seq data.
 04_create_exclusions.py     → Generate exclusion region lists
 04b_extract_supplement_annotations.py → Extract validated enhancers / promoters /
                               novel lncRNA from Baranasic 2022 supplement (danRer11)
+04c_extract_ncrna_tracks.sh → miRNA / lncRNA tracks (eLife distance criteria)
+04d_extract_conservation_tracks.sh → GERP constrained elements + Ancora CNEs
+04e_extract_cope_dope.sh    → DANIO-CODE COPE/DOPE "open-but-inert" element tracks
 05_combine_exclusions.sh    → Merge all exclusion BEDs (with chr normalization)
 06_download_atac.sh         → Download DANIO-CODE ATAC-seq narrowPeak files
 06b_normalize_scores.py     → Per-sample rank-normalize narrowPeak scores
@@ -32,6 +38,14 @@ using DANIO-CODE ATAC-seq data.
                               picks in results/sgrna_shortlist.tsv)
 12_relaxed_tier.sh          → Alternate candidate list at a relaxed gene-distance
                               buffer (2kb); reuses 08→08b→09 via env vars
+13_mappability.sh           → genmap K-mer uniqueness mask (eLife GSH criterion)
+14_intronic_tier.sh         → intron-permissive tier (exon-distal, not gene-distal)
+15–18 (COPE loci)           → sgRNA / HDR donor / genotyping / GenBank maps for the two COPE targets
+19_pipeline_figure.py       → pipeline schematic (docs/PIPELINE.md)
+22–24 (oligo master)        → consolidated oligo order + per-locus design summary (all knock-in loci)
+25_zebrahub_celltype_accessibility.py → pan-cell-type (snATAC) accessibility cross-check
+26_make_igv_batch.sh        → IGV batch: per-candidate evidence snapshots
+27–28 (KNIT)                → nickase (KNIT) biotinylated-donor variant (branch: knit-adaptation)
 ```
 
 Scripts 08/08b/09 are parameterized by env vars (`MASTER_EXCL`, `HARBOR_PREFIX`,
@@ -65,7 +79,7 @@ sets them to emit the relaxed tier without touching strict outputs.
 
 ### Composite Ranking
 Candidates are ranked by a composite score incorporating:
-- Stage count (open in X/10 stages) — primary weight
+- Stage count (open in X/11 stages) — primary weight
 - Region size (larger = better for construct design)
 - Distance from nearest gene (+50 for >50kb, +30 for >10kb, -200 for inside gene)
 - sgRNA availability (when data provided)
@@ -91,21 +105,28 @@ When data is provided (see DATA_NEEDED.md), additional filters are applied:
 | Consensus peaks (90%) | 99,715 |
 | Consensus peaks (80%) | 139,793 |
 | Gene-distal + size-filtered (100%) | 4,771 |
-| **Final safe harbors after Phase 3 (100%)** | **2,316** (strict) / **2,937** (relaxed) |
+| **Final safe harbors after Phase 3 + eLife (100%)** | **1,693** (strict) / **2,090** (relaxed) / **4,131** (intron-permissive) |
 
 ### Candidate tiers (gene-distance)
-Two candidate lists are produced, differing only in the gene flanking buffer
-(inertness/ChIP screen is identical):
-- **Strict** — `GENE_BUFFER_KB=10` → 2,316 candidates → `candidate_feature_table.tsv`
-- **Relaxed** — `RELAXED_GENE_BUFFER_KB=2` → 2,937 (+621) → `candidate_feature_table_relaxed.tsv`
+Three candidate lists are produced, differing in the gene/exon flanking buffer
+(inertness / ChIP / conservation screen is identical):
+- **Strict** — `GENE_BUFFER_KB=10` → 1,693 candidates → `candidate_feature_table.tsv`
+- **Relaxed** — `RELAXED_GENE_BUFFER_KB=2` → 2,090 → `candidate_feature_table_relaxed.tsv`
   (build with `scripts/12_relaxed_tier.sh`)
+- **Intron-permissive** — exon-distal (not whole-gene-distal) → 4,131 →
+  `candidate_feature_table_intronic.tsv` (build with `scripts/14_intronic_tier.sh`)
+
+Counts reflect the eLife-criteria regeneration: the ncRNA distance criteria
+(miRNA ±50 kb, lncRNA ±25 kb) plus a scaffold fix took the strict list from
+2,316 → 1,693.
 
 The relaxed tier surfaces gene-proximal-but-inert sites (in the spirit of the
 tpl102 benchmark, which works experimentally despite being ~341bp from a gene).
 chr12/nrxn1a is #1 in both tiers. Note: tpl102 itself still doesn't surface even
 at 2kb — it also overlaps a repeat (see Validation Benchmark).
 
-Phase 3 regulatory screen (discard-whole) removes 4,771 → 2,316 at the 100% tier:
+The ChIP regulatory screen (discard-whole) takes 4,771 → 2,316 at the 100% tier;
+the eLife ncRNA-distance criteria then reduce it to the final **1,693** (strict). ChIP breakdown:
 ChIP active marks −2,360, validated enhancers −3, promoters −25, novel lncRNA −11,
 H3K27me3 (Polycomb) −2, other active/transcribed ChIP −54. ~49% of gene-distal
 constitutive peaks carry an active/poised-enhancer or insulator mark; almost none
@@ -141,15 +162,19 @@ constitutive landing site need not be accessible before zygotic genome activatio
 Stage assignments verified against Marlétaz et al. 2018 supplemental table
 (DOI: 10.1038/s41586-018-0734-6) and DANIO-CODE data portal.
 
-### Top 5 Candidates (main chromosomes, post full Phase 3 screen)
+### Top 5 Candidates (main chromosomes, post full Phase 3 + eLife screen)
 
 | # | Locus | Size | Nearest Gene | Distance | GC% |
 |---|-------|------|--------------|----------|-----|
 | 1 | chr12:24,289,888-24,291,839 | 1,951bp | nrxn1a | 50kb | 44.2% |
-| 2 | chr20:11,445,664-11,447,454 | 1,790bp | ENSDARG00000096520 | 182kb | 45.5% |
-| 3 | chr24:3,128,791-3,130,466 | 1,675bp | inhbaa | 66kb | 48.0% |
-| 4 | chr6:35,551,173-35,552,810 | 1,637bp | rgs8 | 62kb | 45.5% |
-| 5 | chr14:27,882,540-27,884,172 | 1,632bp | ENSDARG00000075666 | 114kb | 46.2% |
+| 2 | chr24:3,128,791-3,130,466 | 1,675bp | inhbaa | 66kb | 48.0% |
+| 3 | chr6:35,551,173-35,552,810 | 1,637bp | rgs8 | 63kb | 45.5% |
+| 4 | chr14:27,882,540-27,884,172 | 1,632bp | ENSDARG00000075666 | 115kb | 46.2% |
+| 5 | chr16:49,331,441-49,333,192 | 1,751bp | ENSDARG00000062621 | 60kb | 46.8% |
+
+(Ranking refreshed after the eLife regeneration; chr20/ENSDARG00000096520 — previously
+#2 — now falls just outside the top 5 but remains among the designed loci, see
+`results/locus_design_summary.tsv`.)
 
 All candidates are:
 - Open in 11/11 developmental stages (0 – 48 hpf, constitutive)
@@ -182,6 +207,12 @@ cross-checked for in-gene (exon/intron) hits. Recommended guide per candidate
   central cut site.
 - **chr20 and chr24** are weakest — no top guide fully avoids exonic off-targets
   (all such hits are 4-mismatch with low MIT off-target scores, so low risk).
+
+**Final designed loci** (guide + HDR donor + genotyping/junction primers + WT/INTEGRATED
+GenBank maps) are consolidated in `results/locus_design_summary.tsv` and
+`results/oligo_master.tsv`. The six pursued sites are: **chr12/nrxn1a**, **chr20**,
+**chr24/inhbaa** (top de novo GSH), **cope_chr1** and **cope_chr14** (COPE-anchored
+constitutive elements), and **pIGLET24b_v2** (re-guided validated benchmark site).
 
 > **NOTE — off-target tooling:** local `cas-offinder` was unreliable on this
 > machine (OpenCL CPU device absent; the GPU backend produced spurious hits that
@@ -226,9 +257,10 @@ transcriptionally neutral. These regions may be:
 The Phase 3 ChIP screen now **actively distinguishes** "open and inert" from "open
 and regulatory" — 74 DANIO-CODE ChIP samples (9 targets, active/insulator/Polycomb)
 plus validated enhancers/promoters. pIGLET24b is the proof case: constitutively
-open yet covered by active H3K4me3/H3K27ac, so it is correctly removed. Conservation
-(phastCons/CNE) and the DANIO-CODE COPE/DOPE "open-but-inert" tracks remain valuable
-additions (still not loaded). See DATA_NEEDED.md.
+open yet covered by active H3K4me3/H3K27ac, so it is correctly removed. The DANIO-CODE
+COPE/DOPE "open-but-inert" tracks are now loaded and cross-referenced (19 candidates
+overlap a COPE, 52 a DOPE); sequence conservation (GERP constrained elements + Ancora
+CNEs) is implemented but data-gated. See DATA_NEEDED.md.
 
 ### Annotation Discrepancies
 Ensembl gene models are often more inclusive than RefSeq (longer UTRs, alternative
@@ -236,16 +268,24 @@ transcripts). Some candidates may appear "inside" an Ensembl gene while being
 clearly intergenic by RefSeq. The pIGLET24b site demonstrates this — it works
 experimentally despite being within an Ensembl gene model.
 
-### Phase 3 — Active (regulatory) / Partial (conservation, mappability)
+### Phase 3 — Active (regulatory + COPE/DOPE) / Partial (conservation, mappability, GSH lists, TAD)
 The regulatory element screen is **active**: all four ChIP marks
 (H3K27ac, H3K4me1, H3K4me3, CTCF) plus supplement-derived validated enhancers,
 promoters, and novel lncRNA are loaded and applied (discard-whole). This confirmed
 the suspected enhancer role of the former #1 candidate near irx2a (H3K4me1+H3K4me3).
 
-Still **not loaded** (filters implemented, no-op until data added): phastCons/CNE
-conservation, mappability/blacklist/segmental duplications, GSH gene lists
-(cancer/dosage-sensitive/miRNA/UCE), Hi-C TAD boundaries, and DANIO-CODE COPE/DOPE.
-CTCF is from a single stage (Horsfield "Bud", ~10 hpf) — the only CTCF in DANIO-CODE.
+**DANIO-CODE COPE/DOPE are now loaded** and cross-referenced as a positive
+"open-but-inert" corroboration (annotation, not exclusion): of the 1,693 strict
+candidates, **19 overlap a COPE and 52 a DOPE** (`in_cope`/`in_dope`). The eLife
+ncRNA distance criteria (miRNA ±50 kb, lncRNA ±25 kb) are also applied.
+
+Filter code is implemented (GERP constrained elements + Ancora CNEs for conservation;
+genmap K-mer mappability / blacklist / segmental duplications; cancer/dosage-sensitive/UCE
+GSH gene lists; Hi-C TAD boundaries, annotation-only) but **remains a no-op until the
+respective data tracks are downloaded** (gitignored; see DATA_NEEDED.md and scripts
+04c–04e, 13). `conservation_frac` and `tad_distance` columns are present but currently
+empty pending their data. CTCF is from a single stage (Horsfield "Bud", ~10 hpf) — the
+only CTCF in DANIO-CODE.
 
 ### Pipeline Must Be Re-run After Changes
 ⚠️ Any changes to exclusion criteria, consensus parameters, or input data
@@ -270,7 +310,12 @@ All parameters are centralized in `config.sh`:
 | Genome | GRCz11 (danRer11) |
 | Gene annotation | Ensembl release 110 |
 | Repeat annotation | UCSC RepeatMasker (rmsk.txt) |
-| ATAC-seq | DANIO-CODE (Skarmeta Lab + Zhang Lab) |
+| ATAC-seq | DANIO-CODE (Skarmeta + Zhang labs; 31 samples, 11 stages) |
+| ChIP-seq | DANIO-CODE (74 samples, 7 labs; H3K27ac/K4me1/K4me3/K27me3/CTCF + others) |
+| Conservation | GERP constrained elements + Ancora CNEs (danRer11) |
+| Open-but-inert elements | DANIO-CODE COPE/DOPE track hub (Baranasic et al. 2022) |
+| Mappability | genmap K-mer uniqueness (GRCz11) |
+| Cell-type accessibility | Zebrahub snATAC (Bhattacharya et al. 2024) |
 | Stage verification | Marlétaz et al. 2018 (10.1038/s41586-018-0734-6) |
 
 ## Requirements
@@ -307,15 +352,19 @@ bash scripts/08_find_safe_harbors.sh
 bash scripts/08b_biological_filters.sh
 bash scripts/09_annotate_candidates.sh
 bash scripts/10_benchmark.sh
+```
 
 ## Repository Structure
+```
 zebrafish_safe_harbor/
-├── scripts/          # Pipeline scripts (01-11)
+├── scripts/          # Pipeline scripts (01-28)
 ├── config.sh         # Central configuration
 ├── annotation/       # Gene/repeat annotations (not in git - see setup)
 │   ├── benchmarks/   # pIGLET coordinates
 │   ├── chip/         # ChIP-seq peaks + per-mark union BEDs (not in git)
 │   ├── regulatory/   # supplement-derived enhancer/promoter/lncRNA BEDs (not in git)
+│   ├── conservation/ # GERP constrained elements + Ancora CNEs (not in git)
+│   ├── cope_dope/    # DANIO-CODE COPE/DOPE element BEDs (not in git)
 │   └── danio_code_accession_map.txt
 ├── peaks/            # ATAC-seq narrowPeak files (not in git)
 ├── reference/        # GRCz11 genome (not in git)
@@ -324,6 +373,8 @@ zebrafish_safe_harbor/
 │   └── sgrna_shortlist.tsv   # CRISPOR-scored guides for top candidates
 ├── DATA_NEEDED.md    # External data requirements
 └── README.md
+```
 
 ## Branch
-This work is on branch pipeline-review-v2.
+The pipeline lives on `main`. The KNIT nickase-donor adaptation is staged on the
+`knit-adaptation` branch (see `KNIT_ADAPTATION.md`), to be merged once implemented.
